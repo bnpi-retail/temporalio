@@ -232,5 +232,3 @@ def import_products_from_ozon_api_to_file(file_path: str):
                 writer.writerow(prod)
         # break  # TODO: delete break after testing
     return
-
-import_products_from_ozon_api_to_file('./index_local.csv')

@@ -1,0 +1,2 @@
+from ozon_api import import_products_from_ozon_api_to_file
+import_products_from_ozon_api_to_file(index_local.csv)

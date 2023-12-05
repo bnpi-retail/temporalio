@@ -45,14 +45,14 @@ async def main():
         activities=[compose_greeting],
     ):
 
-        print("Running workflow once a minute")
+        print("Running workflow")
 
         await client.start_workflow(
             Fill_1C_Data.run,
             "World",
             id="fill-db-task-id",
             task_queue="fill-db-task-queue",
-            cron_schedule = "0 */6 * * *",
+            cron_schedule = "0 0 * * *",
         )
 
         await asyncio.Future()
