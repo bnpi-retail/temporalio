@@ -51,7 +51,7 @@ async def main():
             "World",
             id="ozon-parsing-task-id",
             task_queue="ozon-parsing-task-queue",
-            cron_schedule = "* * * * *",
+            cron_schedule = "0 0 * * *",
         )
 
         await asyncio.Future()
