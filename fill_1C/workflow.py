@@ -24,7 +24,7 @@ async def compose_greeting(input: ComposeGreetingInput) -> str:
 
 
 @workflow.defn
-class GreetingWorkflow:
+class Fill_1C_Data:
     @workflow.run
     async def run(self, name: str) -> None:
         result = await workflow.execute_activity(
@@ -40,18 +40,18 @@ async def main():
 
     async with Worker(
         client,
-        task_queue="hello-cron-task-queue",
-        workflows=[GreetingWorkflow],
+        task_queue="fill-db-task-queue",
+        workflows=[Fill_1C_Data],
         activities=[compose_greeting],
     ):
 
         print("Running workflow once a minute")
 
         await client.start_workflow(
-            GreetingWorkflow.run,
+            Fill_1C_Data.run,
             "World",
-            id="fill-db-cron-workflow-id",
-            task_queue="hello-cron-task-queue",
+            id="fill-db-task-id",
+            task_queue="fill-db-task-queue",
             cron_schedule="* * * * *",
         )
 
