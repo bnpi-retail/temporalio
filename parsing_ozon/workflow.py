@@ -43,7 +43,7 @@ async def main():
             ParsingOzonWorkflow.run,
             id="parsing-ozon-task-id",
             task_queue="parsing-ozon-task-queue",
-            cron_schedule="0 * * * *",
+            cron_schedule = "0 */6 * * *",
         )
 
         await asyncio.Future()

@@ -52,7 +52,7 @@ async def main():
             "World",
             id="fill-db-task-id",
             task_queue="fill-db-task-queue",
-            cron_schedule="* * * * *",
+            cron_schedule = "0 */6 * * *",
         )
 
         await asyncio.Future()
