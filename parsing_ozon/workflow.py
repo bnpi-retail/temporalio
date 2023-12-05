@@ -9,32 +9,22 @@ from temporalio.client import Client
 from temporalio.worker import Worker
 
 
-
-@dataclass
-class ComposeGreetingInput:
-    greeting: str
-    name: str
-
-
 @activity.defn
-async def compose_greeting(input: ComposeGreetingInput) -> str:
-    def fill_database():
-        from ozon_api import import_products_from_ozon_api_to_file
-        import_products_from_ozon_api_to_file()
-    fill_database()
-    return f"{input.greeting}, {input.name}!"
+async def parsing() -> str:
+    from ozon_api import import_products_from_ozon_api_to_file
+    import_products_from_ozon_api_to_file()
+    return f"Success!"
 
 
 @workflow.defn
-class GreetingWorkflow:
+class ParsingOzonWorkflow:
     @workflow.run
-    async def run(self, name: str) -> None:
+    async def run(self) -> None:
         result = await workflow.execute_activity(
-            compose_greeting,
-            ComposeGreetingInput("Hello", name),
+            parsing,
             start_to_close_timeout=timedelta(seconds=10),
         )
-        workflow.logger.info("Result: %s", result)
+        workflow.logger.info(f"Result: {result}")
 
 
 async def main():
@@ -42,19 +32,18 @@ async def main():
 
     async with Worker(
         client,
-        task_queue="hello-cron-task-queue",
-        workflows=[GreetingWorkflow],
-        activities=[compose_greeting],
+        task_queue="parsing-ozon-task",
+        workflows=[ParsingOzonWorkflow],
+        activities=[parsing],
     ):
 
-        print("Running workflow once a minute")
+        print("Running workflow")
 
         await client.start_workflow(
-            GreetingWorkflow.run,
-            "World",
-            id="hello-cron-workflow-id-2",
-            task_queue="hello-cron-task-queue",
-            cron_schedule="* * * * *",
+            ParsingOzonWorkflow.run,
+            id="parsing-ozon-task-id",
+            task_queue="parsing-ozon-task-queue",
+            cron_schedule="0 * * * *",
         )
 
         await asyncio.Future()
