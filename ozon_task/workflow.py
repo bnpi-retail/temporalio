@@ -6,6 +6,7 @@ from typing import NoReturn
 
 from temporalio import activity, workflow
 from temporalio.client import Client
+from temporalio.common import RetryPolicy
 from temporalio.worker import Worker
 
 
@@ -29,11 +30,13 @@ class OzonWorkflow:
         await workflow.execute_activity(
             ozon_api_activity,
             start_to_close_timeout=timedelta(seconds=20000),
+            retry_policy=RetryPolicy(maximum_interval=timedelta(seconds=2)),
         )
-        
+
         await workflow.execute_activity(
             fill_db_activity,
             start_to_close_timeout=timedelta(seconds=20000),
+            retry_policy=RetryPolicy(maximum_interval=timedelta(seconds=2)),
         )
 
 
