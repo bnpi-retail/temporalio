@@ -17,8 +17,9 @@ async def fill_db_activity() -> NoReturn:
 
 @activity.defn
 async def ozon_api_activity() -> NoReturn:
-    from ozon_api import import_products_from_ozon_api_to_file
-    import_products_from_ozon_api_to_file('./index_local.csv')
+    pass
+    # from ozon_api import import_products_from_ozon_api_to_file
+    # import_products_from_ozon_api_to_file('./index_local.csv')
 
 
 @workflow.defn
