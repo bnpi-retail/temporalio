@@ -2,7 +2,7 @@ import requests
 from secrets import username, password
 
 
-def connect_to_odoo_api_with_auth():
+def connect_to_odoo_api_with_auth(path: str):
     url = 'http://0.0.0.0:8070/'
     db = 'db_odoo'
 
@@ -25,7 +25,6 @@ def connect_to_odoo_api_with_auth():
     else:
         print(f'Error: Failed to authenticate - {session_data.get("error")}')
 
-    path = 'retail/improt_file_1C'
     url = 'http://0.0.0.0:8070/'
     endpoint = f'{url}{path}'
 
