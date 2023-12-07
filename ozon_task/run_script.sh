@@ -1,5 +1,5 @@
 #!/bin/bash
 
-source ./../venv/bin/activate
+source /home/sammy/tasks/temporalio/venv/bin/activate
 
-python workflow.py
+python /home/sammy/tasks/temporalio/ozon_task/workflow.py
