@@ -11,16 +11,15 @@ from temporalio.worker import Worker
 
 @activity.defn
 async def fill_db_activity() -> NoReturn:
-    path = 'retail/improt_file_1C'
-    from fill_db import connect_to_odoo_api_with_auth
-    connect_to_odoo_api_with_auth(path)
+    pass
+    # path = './products_from_ozon_api.csv'
+    # from ozon_api import import_products_from_ozon_api_to_file
+    # import_products_from_ozon_api_to_file(path)
 
 
 @activity.defn
 async def ozon_api_activity() -> NoReturn:
-    path = '/ozon/download_products_from_ozon_api_to_file'
     from fill_db import connect_to_odoo_api_with_auth
-    connect_to_odoo_api_with_auth(path)
 
 
 @workflow.defn
