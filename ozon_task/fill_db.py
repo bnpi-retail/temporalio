@@ -39,6 +39,7 @@ def connect_to_odoo_api_with_auth(path: str, file_path: str, username: str, pass
 
             data_to_encode = '\n'.join([','.join(row) for row in chunk])
             encoded_data = base64.b64encode(data_to_encode.encode('utf-8'))
+
             payload = {'file': ('data.csv', encoded_data)}
 
             endpoint = f'{url}{path}'

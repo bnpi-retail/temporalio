@@ -280,22 +280,22 @@ def import_products_from_ozon_api_to_file(file_path: str):
             commissions = products_commissions[id_on_platform]
             for trad_scheme in trading_schemes:
                 row = {
-                    "categories": category_name,
+                    "categories": category_name.replace(',', '').replace('\n', ''),
                     "id_on_platform": id_on_platform,
-                    "full_categories": parent_category,
-                    "name": name,
-                    "description": description,
+                    "full_categories": parent_category.replace(',', '').replace('\n', ''),
+                    "name": name.replace(',', ''),
+                    "description": description.replace(',', '').replace('\n', ''),
                     "product_id": product_id,
                     "length": dimensions["length"],
                     "width": dimensions["width"],
                     "height": dimensions["height"],
                     "weight": weight,
-                    "seller_name": "Продавец",
+                    "seller_name": "Продавец".replace(',', '').replace('\n', ''),
                     "lower_threshold": 0,
                     "upper_threshold": 0,
                     "coefficient": 0,
                     "percent": 0,
-                    "trading_scheme": trad_scheme,
+                    "trading_scheme": trad_scheme.replace(',', '').replace('\n', ''),
                     "delivery_location": "",
                     "price": price,
                     **commissions,
@@ -409,3 +409,10 @@ def import_products_commission_from_ozon_api_to_file(file_path: str):
                 writer.writerow(row)
 
     return
+
+
+
+
+
+path = './products_from_ozon_api.csv'
+import_products_from_ozon_api_to_file(path)
