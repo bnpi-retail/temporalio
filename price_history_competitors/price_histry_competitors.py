@@ -4,16 +4,15 @@ from datetime import datetime, timedelta
 
 
 class PriceHistoryCompetitors:
-    def __init__(self, username, password):
+    def __init__(self, username, password, token_mp):
         self.username = username
         self.password = password
+        self.token_mpstats = token_mp
 
         self.url = 'http://0.0.0.0:8070/'
         self.db = 'db_odoo'
 
         self.chunk_size = 1000
-        
-        self.token_mpstats = '6577012915bcb8.30316494d539740253021878c9f1155b10958207'
 
     def get_days(self) -> tuple:
         today_date = datetime.now()
@@ -106,30 +105,31 @@ class PriceHistoryCompetitors:
 
         response = requests.get(url, headers=headers, params=params)
 
-        return [
-            {
-                "no_data": 0,
-                "data": "2023-12-11",
-                "balance": 253,
-                "sales": 0,
-                "rating": 4.88,
-                "price": 8490,
-                "final_price": 6990,
-                "is_bestseller": 1,
-                "comments": 96
-            },
-            {
-                "no_data": 0,
-                "data": "2020-08-13",
-                "balance": 193,
-                "sales": 20,
-                "rating": 4.88,
-                "price": 8490,
-                "final_price": 6990,
-                "is_bestseller": 1,
-                "comments": 96
-            },
-        ]
+        ### EXAMPLE
+        # return [
+        #     {
+        #         "no_data": 0,
+        #         "data": "2023-12-11",
+        #         "balance": 253,
+        #         "sales": 0,
+        #         "rating": 4.88,
+        #         "price": 8490,
+        #         "final_price": 6990,
+        #         "is_bestseller": 1,
+        #         "comments": 96
+        #     },
+        #     {
+        #         "no_data": 0,
+        #         "data": "2020-08-13",
+        #         "balance": 193,
+        #         "sales": 20,
+        #         "rating": 4.88,
+        #         "price": 8490,
+        #         "final_price": 6990,
+        #         "is_bestseller": 1,
+        #         "comments": 96
+        #     },
+        # ]
     
         if response.status_code != 200:
             print(f'MP status: {response.status_code}')
@@ -180,11 +180,13 @@ class PriceHistoryCompetitors:
             )
 
 def main():
-    model = PriceHistoryCompetitors('admin', 'admin')
+    from secrets import username, password, token_mp
+    model = PriceHistoryCompetitors(username, password, token_mp)
     res = model.main()
     print(res)
 
 def activity_two(data_dict):
-    model = PriceHistoryCompetitors('admin', 'admin')
+    from secrets import username, password, token_mp
+    model = PriceHistoryCompetitors(username, password, token_mp)
     res = model.activity_two(data_dict)
     print(res)
