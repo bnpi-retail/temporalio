@@ -133,7 +133,7 @@ class PriceHistoryCompetitors:
     
         if response.status_code != 200:
             print(f'MP status: {response.status_code}')
-            return None
+            raise ValueError(f'MP status: {response.status_code}')
         return response.json()
 
     def main(self):
@@ -166,7 +166,6 @@ class PriceHistoryCompetitors:
                 create_history_prices[sku].append(ad)
 
         with open('data.txt', 'w') as file:
-            print(create_history_prices)
             file.write(str(create_history_prices))
 
         return 'Success!'
@@ -183,10 +182,8 @@ def main():
     from secrets import username, password, token_mp
     model = PriceHistoryCompetitors(username, password, token_mp)
     res = model.main()
-    print(res)
 
 def activity_two(data_dict):
     from secrets import username, password, token_mp
     model = PriceHistoryCompetitors(username, password, token_mp)
     res = model.activity_two(data_dict)
-    print(res)

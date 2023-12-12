@@ -1,1 +1,1 @@
-{'377962812': [{'no_data': 0, 'data': '2023-12-11', 'balance': 253, 'sales': 0, 'rating': 4.88, 'price': 8490, 'final_price': 6990, 'is_bestseller': 1, 'comments': 96}], '1225633583': [{'no_data': 0, 'data': '2023-12-11', 'balance': 253, 'sales': 0, 'rating': 4.88, 'price': 8490, 'final_price': 6990, 'is_bestseller': 1, 'comments': 96}]}
+{}
