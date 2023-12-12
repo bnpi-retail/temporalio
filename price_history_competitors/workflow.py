@@ -12,7 +12,7 @@ from temporalio.worker import Worker
 
 
 @activity.defn
-async def ozon_api_activity() -> NoReturn:
+async def mp_parsing_api_activity() -> NoReturn:
     from price_histry_competitors import main
     main()
 
@@ -29,11 +29,11 @@ async def save_in_odoo_activity() -> NoReturn:
 
 
 @workflow.defn
-class OzonWorkflow:
+class MPStatsWorkflow:
     @workflow.run
     async def run(self) -> None:
         await workflow.execute_activity(
-            ozon_api_activity,
+            mp_parsing_api_activity,
             start_to_close_timeout=timedelta(seconds=20000),
             retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
         )
@@ -50,15 +50,15 @@ async def main():
 
     async with Worker(
         client,
-        task_queue="ozon-task-queue",
-        workflows=[OzonWorkflow],
-        activities=[ozon_api_activity, save_in_odoo_activity],
+        task_queue="MP-stats-task-queue",
+        workflows=[MPStatsWorkflow],
+        activities=[mp_parsing_api_activity, save_in_odoo_activity],
     ):
 
         handle = await client.start_workflow(
-            OzonWorkflow.run,
-            id="ozon-workflow-id",
-            task_queue="ozon-task-queue",
+            MPStatsWorkflow.run,
+            id="MP-stats-workflow-id",
+            task_queue="MP-stats-task-queue",
         )
 
         await handle.result()
