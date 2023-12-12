@@ -50,14 +50,14 @@ async def main():
 
     async with Worker(
         client,
-        task_queue="MP-stats-task-queue",
+        task_queue="MPstats-task-queue",
         workflows=[MPStatsWorkflow],
         activities=[mp_parsing_api_activity, save_in_odoo_activity],
     ):
 
         handle = await client.start_workflow(
             MPStatsWorkflow.run,
-            id="MP-stats-workflow-id",
+            id="MPstats-workflow-id",
             task_queue="MP-stats-task-queue",
         )
 
