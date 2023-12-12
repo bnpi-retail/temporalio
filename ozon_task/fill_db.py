@@ -1,49 +1,53 @@
 import csv
 import base64
+import os
+
 import requests
 
 from itertools import islice
-from secrets import username, password
 
 
-def connect_to_odoo_api_with_auth(path: str, file_path: str, username: str, password: str):
-    url = 'http://0.0.0.0:8070/'
-    db = 'db_odoo'
+def connect_to_odoo_api_with_auth(
+    path: str, file_path: str, username: str, password: str
+):
+    url = "http://0.0.0.0:8070/"
+    db = "db_odoo"
     chunk_size = 1000
 
-    session_url = f'{url}/web/session/authenticate'
+    session_url = f"{url}/web/session/authenticate"
     data = {
-        'jsonrpc': '2.0',
-        'method': 'call',
-        'params': {
-            'db': db,
-            'login': username,
-            'password': password,
-        }
+        "jsonrpc": "2.0",
+        "method": "call",
+        "params": {
+            "db": db,
+            "login": username,
+            "password": password,
+        },
     }
     session_response = requests.post(session_url, json=data)
     session_data = session_response.json()
 
-    if session_data.get('result') and session_response.cookies.get('session_id'):
-        session_id = session_response.cookies['session_id']
+    if session_data.get("result") and session_response.cookies.get("session_id"):
+        session_id = session_response.cookies["session_id"]
     else:
         print(f'Error: Failed to authenticate - {session_data.get("error")}')
         return None
 
     chunk_size = 1024
 
-    with open(file_path, 'r', encoding='utf-8') as file:
+    with open(file_path, "r", encoding="utf-8") as file:
         csv_reader = csv.reader(file)
 
-        for chunk_count, chunk in enumerate(iter(lambda: list(islice(csv_reader, chunk_size)), []), 1):
+        for chunk_count, chunk in enumerate(
+            iter(lambda: list(islice(csv_reader, chunk_size)), []), 1
+        ):
+            data_to_encode = "\n".join([",".join(row) for row in chunk])
+            encoded_data = base64.b64encode(data_to_encode.encode("utf-8"))
 
-            data_to_encode = '\n'.join([','.join(row) for row in chunk])
-            encoded_data = base64.b64encode(data_to_encode.encode('utf-8'))
+            payload = {"file": ("data.csv", encoded_data)}
 
-            payload = {'file': ('data.csv', encoded_data)}
-
-            endpoint = f'{url}{path}'
-            headers = {'Cookie': f"session_id={session_id}"}
+            endpoint = f"{url}{path}"
+            headers = {"Cookie": f"session_id={session_id}"}
             response = requests.post(endpoint, headers=headers, files=payload)
 
             print(f"Chunk {chunk_count} sent. Response: {response.text}")
@@ -51,4 +55,62 @@ def connect_to_odoo_api_with_auth(path: str, file_path: str, username: str, pass
     return "File sent successfully"
 
 
-connect_to_odoo_api_with_auth('/import/products_from_ozon_api_to_file', './products_from_ozon_api.csv', username, password)
+def authenticate_to_odoo(username: str, password: str):
+    """Returns session_id."""
+
+    url = "http://0.0.0.0:8070/"
+    db = "db_odoo"
+    session_url = f"{url}/web/session/authenticate"
+    data = {
+        "jsonrpc": "2.0",
+        "method": "call",
+        "params": {
+            "db": db,
+            "login": username,
+            "password": password,
+        },
+    }
+    session_response = requests.post(session_url, json=data)
+    session_data = session_response.json()
+
+    if session_data.get("result") and session_response.cookies.get("session_id"):
+        session_id = session_response.cookies["session_id"]
+        return session_id
+    else:
+        print(f'Error: Failed to authenticate - {session_data.get("error")}')
+        return None
+
+
+def divide_csv_into_chunks(file_path):
+    with open(file_path, "r", encoding="utf-8") as csvfile:
+        reader = csv.DictReader(csvfile)
+        fieldnames = reader.fieldnames
+
+        for i, row in enumerate(reader):
+            if i in range(0, 1000000, 1000):
+                name = f"chunk_{i}.csv"
+                with open(name, "w") as chunk_csvfile:
+                    writer = csv.DictWriter(chunk_csvfile, fieldnames=fieldnames)
+                    writer.writeheader()
+
+            with open(name, "a") as chunk_csvfile:
+                writer = csv.DictWriter(chunk_csvfile, fieldnames=fieldnames)
+                writer.writerow(row)
+
+
+def send_csv_file_to_ozon_import_file(url, session_id, file_path):
+    headers = {"Cookie": f"session_id={session_id}"}
+    with open(file_path, "r") as f:
+        content = f.read()
+        encoded_data = base64.b64encode(content.encode("utf-8"))
+
+        files = {"file": encoded_data}
+        response = requests.post(url, headers=headers, files=files)
+        print(f"File {file_path} sent. Response: {response.text}")
+        return "File sent successfully"
+
+
+def remove_all_chunk_csv_files():
+    for f in os.listdir():
+        if f.startswith("chunk"):
+            os.remove(f)
