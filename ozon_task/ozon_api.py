@@ -196,6 +196,60 @@ def get_product_info(product_id: int):
     return result
 
 
+def get_product_info_list_by_sku(sku_list: list):
+    result = requests.post(
+        "https://api-seller.ozon.ru/v2/product/info/list",
+        headers=headers,
+        data=json.dumps({"sku": sku_list}),
+    ).json()
+    return result["result"]["items"]
+
+
+def get_product_info_list_by_product_id(product_id_list: list):
+    result = requests.post(
+        "https://api-seller.ozon.ru/v2/product/info/list",
+        headers=headers,
+        data=json.dumps({"product_id": product_id_list}),
+    ).json()
+    return result["result"]["items"]
+
+
+def get_product_sku_from_product_info_list(product_info_list: list) -> dict:
+    """Returns dict:
+    {
+        prod_id_1: sku_1,
+        ...
+        prod_id_n: {
+            'fbs': sku_n_1,
+            'fbo': sku_n_2
+        }
+    }
+    """
+    sku = {}
+    for item in product_info_list:
+        if item["sku"] != 0:
+            sku[item["id"]] = item["sku"]
+        else:
+            multiple_skus = {}
+            for i in item["sources"]:
+                multiple_skus[i["source"]] = i["sku"]
+            sku[item["id"]] = multiple_skus
+    return sku
+
+
+def get_product_visibility_from_product_info_list(product_info_list: list) -> dict:
+    """Returns dict:
+    {
+        prod_id: bool,
+        ...
+    }
+    """
+    product_visibility = {}
+    for item in product_info_list:
+        product_visibility[item["id"]] = "Да" if item["visible"] else "Нет"
+    return product_visibility
+
+
 def get_product_attributes(product_ids: list, limit=1000) -> list:
     response = requests.post(
         "https://api-seller.ozon.ru/v3/products/info/attributes",
@@ -222,8 +276,9 @@ def get_price_objects(product_ids: list, limit=1000):
                 "limit": limit,
             }
         ),
-    ).json()["result"]["items"]
-    return result
+    ).json()
+
+    return result["result"]["items"]
 
 
 def get_product_price(product_ids: list, limit=1000):
@@ -260,91 +315,6 @@ def get_product_trading_schemes(product_ids: list, limit=1000) -> dict:
         )
 
     return products_trading_schemes
-
-
-def import_products_from_ozon_api_to_file(file_path: str):
-    fieldnames = [
-        "categories",
-        "id_on_platform",
-        "full_categories",
-        "name",
-        "description",
-        "product_id",
-        "length",
-        "width",
-        "height",
-        "weight",
-        "seller_name",
-        "lower_threshold",
-        "upper_threshold",
-        "coefficient",
-        "percent",
-        "trading_scheme",
-        "delivery_location",
-        "price",
-        *list(ALL_COMMISSIONS.keys()),
-    ]
-    write_headers_to_csv(file_path, fieldnames)
-    limit = 1000
-    last_id = ""
-    products = ["" for _ in range(limit)]
-    while len(products) == limit:
-        products, last_id = get_product(limit=limit, last_id=last_id)
-        prod_ids = get_product_id(products)
-        products_attrs = get_product_attributes(prod_ids, limit=limit)
-        products_trading_schemes = get_product_trading_schemes(prod_ids, limit=limit)
-        products_prices = get_product_price(prod_ids, limit=limit)
-        products_commissions = get_product_commissions(prod_ids, limit=limit)
-
-        products_rows = []
-        for prod in products_attrs:
-            attrs = prod["attributes"]
-            for a in attrs:
-                if a["attribute_id"] == 9461:
-                    category_name = a["values"][0]["value"]
-                if a["attribute_id"] == 22387:
-                    parent_category = a["values"][0]["value"]
-                if a["attribute_id"] == 4191:
-                    description = a["values"][0]["value"]
-
-            id_on_platform = prod["id"]
-            product_id = prod["offer_id"]
-            name = prod["name"]
-            dimensions = calculate_product_dimensions(prod)
-            weight = calculate_product_weight_in_kg(prod)
-            price = products_prices[id_on_platform]
-            trading_schemes = products_trading_schemes[id_on_platform]
-            commissions = products_commissions[id_on_platform]
-            for trad_scheme in trading_schemes:
-                row = {
-                    "categories": category_name,
-                    "id_on_platform": id_on_platform,
-                    "full_categories": parent_category,
-                    "name": name,
-                    "description": description,
-                    "product_id": product_id,
-                    "length": dimensions["length"],
-                    "width": dimensions["width"],
-                    "height": dimensions["height"],
-                    "weight": weight,
-                    "seller_name": "Продавец",
-                    "lower_threshold": 0,
-                    "upper_threshold": 0,
-                    "coefficient": 0,
-                    "percent": 0,
-                    "trading_scheme": trad_scheme,
-                    "delivery_location": "",
-                    "price": price,
-                    **commissions,
-                }
-                products_rows.append(row)
-
-        with open(file_path, "a", newline="") as csvfile:
-            for prod in products_rows:
-                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-                writer.writerow(prod)
-
-    return
 
 
 def get_product_commissions(product_ids: list, limit=1):
@@ -423,44 +393,12 @@ def import_comissions_by_categories_from_ozon_api_to_file(file_path: str):
     return
 
 
-def import_products_commission_from_ozon_api_to_file(file_path: str):
-    fieldnames = ["id_on_platform", *list(ALL_COMMISSIONS.keys())]
-    write_headers_to_csv(file_path, fieldnames)
-    limit = 1000
-    last_id = ""
-    products = ["" for _ in range(limit)]
-
-    while len(products) == limit:
-        products, last_id = get_product(limit=limit, last_id=last_id)
-        prod_ids = get_product_id(products)
-        prod_commissions = get_product_commissions(prod_ids, limit=limit)
-        commissions_rows = []
-        for prod_id in prod_ids:
-            commissions = prod_commissions[prod_id]
-            row = {"id_on_platform": prod_id, **commissions}
-            commissions_rows.append(row)
-
-        with open(file_path, "a", newline="") as csvfile:
-            for row in commissions_rows:
-                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-                writer.writerow(row)
-
-    return
-
-
-def get_product_info_list_by_sku(sku_list: list):
-    result = requests.post(
-        "https://api-seller.ozon.ru/v2/product/info/list",
-        headers=headers,
-        data=json.dumps({"sku": sku_list}),
-    ).json()
-    return result["result"]["items"]
-
-
-def get_transactions(date_from: str, date_to: str, page=1, page_size=1000):
-    """
-    date_from/date_to format: 2023-11-01T00:00:00.000Z
-    """
+def get_transactions(
+    date_from: str = "2023-11-01T00:00:00.000Z",
+    date_to: str = "2023-12-01T00:00:00.000Z",
+    page=1,
+    page_size=1000,
+):
     result = requests.post(
         "https://api-seller.ozon.ru/v3/finance/transaction/list",
         headers=headers,
@@ -493,13 +431,7 @@ def get_transactions(date_from: str, date_to: str, page=1, page_size=1000):
         return operations, None
 
 
-def convert_datetime_str_to_ozon_date(datetime_str: str):
-    return datetime_str.replace(" ", "T") + "Z"
-
-
-def import_transactions_from_ozon_api_to_file(
-    file_path: str, date_from: str, date_to: str
-):
+def import_transactions_from_ozon_api_to_file(file_path: str, next_page=1):
     fieldnames = [
         "transaction_id",
         "transaction_date",
@@ -510,14 +442,21 @@ def import_transactions_from_ozon_api_to_file(
         "services",
         "posting_number",
     ]
-    write_headers_to_csv(file_path, fieldnames)
-    next_page = 1
+    if not os.path.isfile(file_path):
+        write_headers_to_csv(file_path, fieldnames)
+
     page_size = 1000
     operations = ["" for _ in range(page_size)]
     while len(operations) == page_size:
-        operations, next_page = get_transactions(
-            date_from=date_from, date_to=date_to, page=next_page, page_size=page_size
-        )
+        print(next_page)
+        try:
+            operations, next_page = get_transactions(
+                page=next_page, page_size=page_size
+            )
+        except Exception as e:
+            print(e)
+            return next_page
+
         operations_rows = []
         for oper in operations:
             transaction_id = oper["operation_id"]
@@ -528,10 +467,15 @@ def import_transactions_from_ozon_api_to_file(
             product_skus = [i["sku"] for i in oper["items"]]
 
             if product_skus:
-                products_info_list = get_product_info_list_by_sku(product_skus)
+                try:
+                    products_info_list = get_product_info_list_by_sku(product_skus)
+                except Exception as e:
+                    print(e)
+                    return next_page
                 prod_ids_on_platform = [item["id"] for item in products_info_list]
             else:
                 prod_ids_on_platform = []
+
             services = []
             for service in oper["services"]:
                 sn = OPERATION_TYPES.get(service["name"])
@@ -546,7 +490,7 @@ def import_transactions_from_ozon_api_to_file(
                 "order_date": order_date if order_date else transaction_date,
                 "name": name,
                 "amount": amount,
-                "product_ids_on_platform": prod_ids_on_platform,
+                "product_ids_on_platform": product_skus,
                 "services": services,
                 "posting_number": posting_number,
             }
@@ -557,5 +501,127 @@ def import_transactions_from_ozon_api_to_file(
             for row in operations_rows:
                 writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
                 writer.writerow(row)
+
+    return "Successfully imported all transactions!"
+
+
+def convert_datetime_str_to_ozon_date(datetime_str: str):
+    return datetime_str.replace(" ", "T") + "Z"
+
+
+def import_products_from_ozon_api_to_file(file_path: str):
+    fieldnames = [
+        "categories",
+        "id_on_platform",
+        "full_categories",
+        "name",
+        "description",
+        "product_id",
+        "length",
+        "width",
+        "height",
+        "weight",
+        "seller_name",
+        "lower_threshold",
+        "upper_threshold",
+        "coefficient",
+        "percent",
+        "trading_scheme",
+        "delivery_location",
+        "price",
+        "visible",
+        *list(ALL_COMMISSIONS.keys()),
+    ]
+    write_headers_to_csv(file_path, fieldnames)
+    limit = 1000
+    last_id = ""
+    products = ["" for _ in range(limit)]
+    sku_added = {}
+    while len(products) == limit:
+        products, last_id = get_product(limit=limit, last_id=last_id)
+        prod_ids = get_product_id(products)
+        products_attrs = get_product_attributes(prod_ids, limit=limit)
+        products_trading_schemes = get_product_trading_schemes(prod_ids, limit=limit)
+        products_prices = get_product_price(prod_ids, limit=limit)
+        products_commissions = get_product_commissions(prod_ids, limit=limit)
+
+        prod_info_list = get_product_info_list_by_product_id(prod_ids)
+        products_skus = get_product_sku_from_product_info_list(prod_info_list)
+        products_visibility = get_product_visibility_from_product_info_list(
+            prod_info_list
+        )
+
+        products_rows = []
+        for i, prod in enumerate(products_attrs):
+            attrs = prod["attributes"]
+            for a in attrs:
+                if a["attribute_id"] == 9461:
+                    category_name = a["values"][0]["value"]
+                if a["attribute_id"] == 22387:
+                    parent_category = a["values"][0]["value"]
+                if a["attribute_id"] == 4191:
+                    description = a["values"][0]["value"]
+
+            id_on_platform = prod["id"]
+            product_id = prod["offer_id"]
+            name = prod["name"]
+            dimensions = calculate_product_dimensions(prod)
+            weight = calculate_product_weight_in_kg(prod)
+            price = products_prices[id_on_platform]
+            trading_schemes = products_trading_schemes[id_on_platform]
+            commissions = products_commissions[id_on_platform]
+            sku = products_skus[prod["id"]]
+            visible = products_visibility[prod["id"]]
+
+            for trad_scheme in trading_schemes:
+                row = {
+                    "categories": category_name,
+                    "full_categories": parent_category,
+                    "name": name,
+                    "description": description,
+                    "product_id": product_id,
+                    "length": dimensions["length"],
+                    "width": dimensions["width"],
+                    "height": dimensions["height"],
+                    "weight": weight,
+                    "seller_name": "Продавец",
+                    "lower_threshold": 0,
+                    "upper_threshold": 0,
+                    "coefficient": 0,
+                    "percent": 0,
+                    "delivery_location": "",
+                    "price": price,
+                    "visible": visible,
+                    **commissions,
+                }
+
+                if isinstance(sku, dict):
+                    new_row = {}
+                    for tr_scheme, sku_number in sku.items():
+                        if sku_added.get(sku_number):
+                            continue
+                        new_row = {
+                            "id_on_platform": sku_number,
+                            "trading_scheme": tr_scheme.upper(),
+                            **row,
+                        }
+                        products_rows.append(new_row)
+                        sku_added[sku_number] = True
+
+                    continue
+
+                if sku_added.get(sku):
+                    continue
+                row["id_on_platform"] = sku
+                row["trading_scheme"] = (
+                    trad_scheme if trad_scheme == "" else ", ".join(trading_schemes)
+                )
+                products_rows.append(row)
+                sku_added[sku] = True
+
+        with open(file_path, "a", newline="") as csvfile:
+            for prod in products_rows:
+                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                writer.writerow(prod)
 
     return
