@@ -72,5 +72,4 @@ async def activity_write_transactions_to_odoo():
     except Exception as e:
         raise e
     finally:
-        # remove all chunk csv files
         remove_all_chunk_csv_files()
