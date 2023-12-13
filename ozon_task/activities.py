@@ -52,16 +52,19 @@ async def activity_import_transactions():
         str(datetime.combine(datetime.now(), time.max) - timedelta(days=1))
     )
     file_path = f"./transactions.csv"
-    import_transactions_from_ozon_api_to_file(
-        file_path=file_path, date_from=date_from, date_to=date_to
-    )
+    next_page = 1
+    while next_page != "Successfully imported all transactions!":
+        next_page = import_transactions_from_ozon_api_to_file(
+            file_path=file_path, date_from=date_from, date_to=date_to
+        )
     return file_path
 
 
 @activity.defn
 async def activity_write_transactions_to_odoo():
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
-    divide_csv_into_chunks("./transactions.csv")
+    file_path = "./transactions.csv"
+    divide_csv_into_chunks(file_path)
     url = "http://0.0.0.0:8070/import/transactions_from_ozon_api_to_file"
     try:
         for fpath in os.listdir():
@@ -73,3 +76,4 @@ async def activity_write_transactions_to_odoo():
         raise e
     finally:
         remove_all_chunk_csv_files()
+        os.remove(file_path)
