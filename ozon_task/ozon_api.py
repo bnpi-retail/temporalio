@@ -431,7 +431,9 @@ def get_transactions(
         return operations, None
 
 
-def import_transactions_from_ozon_api_to_file(file_path: str, next_page=1):
+def import_transactions_from_ozon_api_to_file(
+    file_path: str, date_from: str, date_to: str, next_page=1
+):
     fieldnames = [
         "transaction_id",
         "transaction_date",
@@ -451,7 +453,10 @@ def import_transactions_from_ozon_api_to_file(file_path: str, next_page=1):
         print(next_page)
         try:
             operations, next_page = get_transactions(
-                page=next_page, page_size=page_size
+                page=next_page,
+                page_size=page_size,
+                date_from=date_from,
+                date_to=date_to,
             )
         except Exception as e:
             print(e)
