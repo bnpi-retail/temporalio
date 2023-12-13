@@ -61,6 +61,23 @@ async def activity_import_transactions():
 
 
 @activity.defn
+async def activity_import_transactions_from_prev_month():
+    date_from = convert_datetime_str_to_ozon_date(
+        str(datetime.combine(datetime.now(), time.min) - timedelta(days=30))
+    )
+    date_to = convert_datetime_str_to_ozon_date(
+        str(datetime.combine(datetime.now(), time.max) - timedelta(days=1))
+    )
+    file_path = f"./transactions.csv"
+    next_page = 1
+    while next_page != "Successfully imported all transactions!":
+        next_page = import_transactions_from_ozon_api_to_file(
+            file_path=file_path, date_from=date_from, date_to=date_to
+        )
+    return file_path
+
+
+@activity.defn
 async def activity_write_transactions_to_odoo():
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
     file_path = "./transactions.csv"
