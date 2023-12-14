@@ -471,16 +471,6 @@ def import_transactions_from_ozon_api_to_file(
             amount = oper["amount"]
             product_skus = [i["sku"] for i in oper["items"]]
 
-            if product_skus:
-                try:
-                    products_info_list = get_product_info_list_by_sku(product_skus)
-                except Exception as e:
-                    print(e)
-                    return next_page - 1
-                prod_ids_on_platform = [item["id"] for item in products_info_list]
-            else:
-                prod_ids_on_platform = []
-
             services = []
             for service in oper["services"]:
                 sn = OPERATION_TYPES.get(service["name"])
