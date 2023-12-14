@@ -237,19 +237,6 @@ def get_product_sku_from_product_info_list(product_info_list: list) -> dict:
     return sku
 
 
-def get_product_visibility_from_product_info_list(product_info_list: list) -> dict:
-    """Returns dict:
-    {
-        prod_id: bool,
-        ...
-    }
-    """
-    product_visibility = {}
-    for item in product_info_list:
-        product_visibility[item["id"]] = "Да" if item["visible"] else "Нет"
-    return product_visibility
-
-
 def get_product_attributes(product_ids: list, limit=1000) -> list:
     response = requests.post(
         "https://api-seller.ozon.ru/v3/products/info/attributes",
@@ -524,7 +511,6 @@ def import_products_from_ozon_api_to_file(file_path: str):
         "trading_scheme",
         "delivery_location",
         "price",
-        "visible",
         *list(ALL_COMMISSIONS.keys()),
     ]
     write_headers_to_csv(file_path, fieldnames)
@@ -542,9 +528,6 @@ def import_products_from_ozon_api_to_file(file_path: str):
 
         prod_info_list = get_product_info_list_by_product_id(prod_ids)
         products_skus = get_product_sku_from_product_info_list(prod_info_list)
-        products_visibility = get_product_visibility_from_product_info_list(
-            prod_info_list
-        )
 
         products_rows = []
         for i, prod in enumerate(products_attrs):
@@ -566,7 +549,6 @@ def import_products_from_ozon_api_to_file(file_path: str):
             trading_schemes = products_trading_schemes[id_on_platform]
             commissions = products_commissions[id_on_platform]
             sku = products_skus[prod["id"]]
-            visible = products_visibility[prod["id"]]
 
             for trad_scheme in trading_schemes:
                 row = {
@@ -586,7 +568,6 @@ def import_products_from_ozon_api_to_file(file_path: str):
                     "percent": 0,
                     "delivery_location": "",
                     "price": price,
-                    "visible": visible,
                     **commissions,
                 }
 
@@ -618,6 +599,93 @@ def import_products_from_ozon_api_to_file(file_path: str):
 
         with open(file_path, "a", newline="") as csvfile:
             for prod in products_rows:
+                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                writer.writerow(prod)
+
+    return
+
+
+def get_product_stocks(product_ids: list, limit=1000) -> dict:
+    """Returns dict:
+    {
+        <prod_id>: {
+            'fbs': int,
+            'fbo': int,
+        },
+        ...
+    }
+    """
+    result = requests.post(
+        "https://api-seller.ozon.ru/v3/product/info/stocks",
+        headers=headers,
+        data=json.dumps(
+            {
+                "filter": {
+                    "product_id": [str(prod_id) for prod_id in product_ids],
+                },
+                "limit": limit,
+            }
+        ),
+    ).json()["result"]["items"]
+    stocks = {}
+    for prod in result:
+        prod_id = prod["product_id"]
+
+        prod_stocks = {}
+        for stock in prod["stocks"]:
+            scheme = stock["type"]
+            present_stocks = stock["present"]
+            prod_stocks[scheme] = present_stocks
+
+        stocks[prod_id] = prod_stocks
+
+    return stocks
+
+
+def import_stocks_from_ozon_api_to_file(file_path: str):
+    fieldnames = [
+        "product_id",
+        "id_on_platform",
+        "stocks_fbs",
+        "stocks_fbo",
+    ]
+    write_headers_to_csv(file_path, fieldnames)
+    limit = 1000
+    last_id = ""
+    products = ["" for _ in range(limit)]
+    while len(products) == limit:
+        products, last_id = get_product(limit=limit, last_id=last_id)
+        prod_ids = get_product_id(products)
+        prod_info_list = get_product_info_list_by_product_id(prod_ids)
+        products_skus = get_product_sku_from_product_info_list(prod_info_list)
+        stocks = get_product_stocks(product_ids=prod_ids, limit=limit)
+        stocks_rows = []
+
+        for prod_id in prod_ids:
+            row = {"product_id": prod_id, "stocks_fbs": 0, "stocks_fbo": 0}
+            sku = products_skus[prod_id]
+            if isinstance(sku, dict):
+                for tr_scheme, sku_number in sku.items():
+                    new_row = {"product_id": prod_id, "stocks_fbs": 0, "stocks_fbo": 0}
+                    new_row["id_on_platform"] = sku_number
+                    stock = stocks[prod_id][tr_scheme]
+                    if tr_scheme == "fbs":
+                        new_row["stocks_fbs"] = stock
+                    elif tr_scheme == "fbo":
+                        new_row["stocks_fbo"] = stock
+
+                    stocks_rows.append(new_row)
+                    print(f"Product {sku_number} stocks were imported")
+            else:
+                row["id_on_platform"] = sku
+                stock = stocks[prod_id]
+                row["stocks_fbs"] = stock["fbs"]
+                row["stocks_fbo"] = stock["fbo"]
+                stocks_rows.append(row)
+                print(f"Product {sku_number} stocks were imported")
+
+        with open(file_path, "a", newline="") as csvfile:
+            for prod in stocks_rows:
                 writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
                 writer.writerow(prod)
 
