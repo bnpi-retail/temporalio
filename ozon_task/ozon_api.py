@@ -682,7 +682,7 @@ def import_stocks_from_ozon_api_to_file(file_path: str):
                 row["stocks_fbs"] = stock["fbs"]
                 row["stocks_fbo"] = stock["fbo"]
                 stocks_rows.append(row)
-                print(f"Product {sku_number} stocks were imported")
+                print(f"Product {sku} stocks were imported")
 
         with open(file_path, "a", newline="") as csvfile:
             for prod in stocks_rows:

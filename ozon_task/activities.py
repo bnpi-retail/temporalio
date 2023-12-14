@@ -8,6 +8,7 @@ from temporalio import activity
 from ozon_api import (
     import_products_from_ozon_api_to_file,
     import_transactions_from_ozon_api_to_file,
+    import_stocks_from_ozon_api_to_file,
     convert_datetime_str_to_ozon_date,
 )
 
@@ -24,6 +25,7 @@ USERNAME = os.getenv("USERNAME")
 PASSWORD = os.getenv("PASSWORD")
 TRANSACTIONS_PATH = "./transactions.csv"
 PRODUCTS_PATH = "./products.csv"
+STOCKS_PATH = "./stocks.csv"
 
 
 @activity.defn
@@ -79,6 +81,24 @@ async def activity_write_transactions_to_odoo():
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
     divide_csv_into_chunks(TRANSACTIONS_PATH)
     url = "http://0.0.0.0:8070/import/transactions_from_ozon_api_to_file"
+
+    for fpath in os.listdir():
+        if fpath.startswith("chunk"):
+            send_csv_file_to_ozon_import_file(
+                url=url, session_id=session_id, file_path=fpath
+            )
+
+
+@activity.defn
+async def activity_import_stocks() -> NoReturn:
+    import_stocks_from_ozon_api_to_file(STOCKS_PATH)
+
+
+@activity.defn
+async def activity_write_stocks_to_odoo():
+    session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
+    divide_csv_into_chunks(STOCKS_PATH)
+    url = "http://0.0.0.0:8070/import/stocks_from_ozon_api_to_file"
 
     for fpath in os.listdir():
         if fpath.startswith("chunk"):
