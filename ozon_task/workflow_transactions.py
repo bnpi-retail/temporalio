@@ -11,6 +11,7 @@ with workflow.unsafe.imports_passed_through():
     from activities import (
         activity_import_transactions,
         activity_write_transactions_to_odoo,
+        activity_remove_csv_files,
     )
 
 
@@ -30,6 +31,12 @@ class OzonTransactionsWorkflow:
             retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
         )
 
+        await workflow.execute_activity(
+            activity_remove_csv_files,
+            start_to_close_timeout=timedelta(seconds=20000),
+            retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
+        )
+
 
 async def main():
     client = await Client.connect("localhost:7233")
@@ -41,6 +48,7 @@ async def main():
         activities=[
             activity_import_transactions,
             activity_write_transactions_to_odoo,
+            activity_remove_csv_files,
         ],
     ):
         handle = await client.start_workflow(

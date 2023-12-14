@@ -601,6 +601,7 @@ def import_products_from_ozon_api_to_file(file_path: str):
                             **row,
                         }
                         products_rows.append(new_row)
+                        print(f"Product {sku_number} was imported")
                         sku_added[sku_number] = True
 
                     continue
@@ -612,6 +613,7 @@ def import_products_from_ozon_api_to_file(file_path: str):
                     trad_scheme if trad_scheme == "" else ", ".join(trading_schemes)
                 )
                 products_rows.append(row)
+                print(f"Product {sku} was imported")
                 sku_added[sku] = True
 
         with open(file_path, "a", newline="") as csvfile:
