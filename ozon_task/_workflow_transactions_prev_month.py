@@ -53,7 +53,7 @@ async def main():
     ):
         handle = await client.start_workflow(
             OzonTransactionsWorkflow.run,
-            id="ozon-transactions-workflow",
+            id="ozon-workflow-transactions-prev-month-id",
             task_queue="ozon-task-queue",
         )
 
