@@ -3,15 +3,15 @@ import os
 from typing import NoReturn
 
 from dotenv import load_dotenv
-
 from temporalio import activity
+import requests
+
 from ozon_api import (
     import_products_from_ozon_api_to_file,
     import_transactions_from_ozon_api_to_file,
     import_stocks_from_ozon_api_to_file,
     convert_datetime_str_to_ozon_date,
 )
-
 from fill_db import (
     authenticate_to_odoo,
     divide_csv_into_chunks,
@@ -110,3 +110,12 @@ async def activity_write_stocks_to_odoo():
 @activity.defn
 async def activity_remove_csv_files():
     remove_all_csv_files()
+
+
+@activity.defn
+async def activity_compute_products_coefs_and_groups():
+    session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
+    url = "http://0.0.0.0:8070/compute/products_coefs_and_groups"
+    headers = {"Cookie": f"session_id={session_id}"}
+    response = requests.post(url, headers=headers)
+    print(response.text)
