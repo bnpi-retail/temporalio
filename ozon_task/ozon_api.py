@@ -498,6 +498,7 @@ def import_products_from_ozon_api_to_file(file_path: str):
         "full_categories",
         "name",
         "description",
+        "keywords",
         "product_id",
         "length",
         "width",
@@ -539,6 +540,8 @@ def import_products_from_ozon_api_to_file(file_path: str):
                     parent_category = a["values"][0]["value"]
                 if a["attribute_id"] == 4191:
                     description = a["values"][0]["value"]
+                if a["attribute_id"] == 22336:
+                    keywords = a["values"][0]["value"]
 
             id_on_platform = prod["id"]
             product_id = prod["offer_id"]
@@ -556,6 +559,7 @@ def import_products_from_ozon_api_to_file(file_path: str):
                     "full_categories": parent_category,
                     "name": name,
                     "description": description,
+                    "keywords": keywords,
                     "product_id": product_id,
                     "length": dimensions["length"],
                     "width": dimensions["width"],
