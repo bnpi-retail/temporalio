@@ -119,3 +119,12 @@ async def activity_compute_products_coefs_and_groups():
     headers = {"Cookie": f"session_id={session_id}"}
     response = requests.post(url, headers=headers)
     print(response.text)
+
+
+@activity.defn
+async def activity_compute_products_percent_expenses():
+    session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
+    url = "http://0.0.0.0:8070/compute/products_percent_expenses"
+    headers = {"Cookie": f"session_id={session_id}"}
+    response = requests.post(url, headers=headers)
+    print(response.text)
