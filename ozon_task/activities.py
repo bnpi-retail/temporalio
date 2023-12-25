@@ -133,3 +133,12 @@ async def activity_compute_products_percent_expenses():
     # response = requests.post(url, headers=headers)
     # print(response.text)
     print("Products percent expenses computation launched.")
+
+
+@activity.defn
+async def activity_create_daily_tasks():
+    session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
+    url = "http://0.0.0.0:8070/tasks/create_daily_tasks"
+    headers = {"Cookie": f"session_id={session_id}"}
+    response = requests.post(url, headers=headers)
+    print(response.text)
