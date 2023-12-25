@@ -38,7 +38,7 @@ async def main():
     ):
         handle = await client.start_workflow(
             OzonComputePercentExpensesWorkflow.run,
-            id="ozon-workflow-compute-id",
+            id="ozon-workflow-compute-percent-expenses-id",
             task_queue="ozon-task-queue",
         )
 
