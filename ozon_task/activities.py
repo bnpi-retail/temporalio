@@ -1,5 +1,6 @@
 from datetime import datetime, time, timedelta
 import os
+import subprocess
 from typing import NoReturn
 
 from dotenv import load_dotenv
@@ -125,6 +126,10 @@ async def activity_compute_products_coefs_and_groups():
 async def activity_compute_products_percent_expenses():
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
     url = "http://0.0.0.0:8070/compute/products_percent_expenses"
-    headers = {"Cookie": f"session_id={session_id}"}
-    response = requests.post(url, headers=headers)
-    print(response.text)
+    subprocess.Popen(
+        ["curl", "-X", "POST", "-H", f"Cookie: session_id={session_id}", url, "&"]
+    )
+    # headers = {"Cookie": f"session_id={session_id}"}
+    # response = requests.post(url, headers=headers)
+    # print(response.text)
+    print("Products percent expenses computation launched.")
