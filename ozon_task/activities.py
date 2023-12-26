@@ -129,9 +129,6 @@ async def activity_compute_products_percent_expenses():
     subprocess.Popen(
         ["curl", "-X", "POST", "-H", f"Cookie: session_id={session_id}", url, "&"]
     )
-    # headers = {"Cookie": f"session_id={session_id}"}
-    # response = requests.post(url, headers=headers)
-    # print(response.text)
     print("Products percent expenses computation launched.")
 
 
