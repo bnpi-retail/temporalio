@@ -268,11 +268,12 @@ def get_price_objects(product_ids: list, limit=1000):
     return result["result"]["items"]
 
 
-def get_product_price(product_ids: list, limit=1000):
+def get_product_prices(product_ids: list, limit=1000):
+    """Returns a dict {product_id: prices_info}"""
     result = get_price_objects(product_ids, limit)
     product_price = {}
     for item in result:
-        product_price[item["product_id"]] = item["price"]["price"]
+        product_price[item["product_id"]] = item["price"]
     return product_price
 
 
@@ -512,6 +513,7 @@ def import_products_from_ozon_api_to_file(file_path: str):
         "trading_scheme",
         "delivery_location",
         "price",
+        "old_price",
         *list(ALL_COMMISSIONS.keys()),
     ]
     write_headers_to_csv(file_path, fieldnames)
@@ -524,7 +526,7 @@ def import_products_from_ozon_api_to_file(file_path: str):
         prod_ids = get_product_id(products)
         products_attrs = get_product_attributes(prod_ids, limit=limit)
         products_trading_schemes = get_product_trading_schemes(prod_ids, limit=limit)
-        products_prices = get_product_price(prod_ids, limit=limit)
+        products_prices = get_product_prices(prod_ids, limit=limit)
         products_commissions = get_product_commissions(prod_ids, limit=limit)
 
         prod_info_list = get_product_info_list_by_product_id(prod_ids)
@@ -548,7 +550,8 @@ def import_products_from_ozon_api_to_file(file_path: str):
             name = prod["name"]
             dimensions = calculate_product_dimensions(prod)
             weight = calculate_product_weight_in_kg(prod)
-            price = products_prices[id_on_platform]
+            price = products_prices[id_on_platform]["price"]
+            old_price = products_prices[id_on_platform]["old_price"]
             trading_schemes = products_trading_schemes[id_on_platform]
             commissions = products_commissions[id_on_platform]
             sku = products_skus[prod["id"]]
@@ -572,6 +575,7 @@ def import_products_from_ozon_api_to_file(file_path: str):
                     "percent": 0,
                     "delivery_location": "",
                     "price": price,
+                    "old_price": old_price,
                     **commissions,
                 }
 
