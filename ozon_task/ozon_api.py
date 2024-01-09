@@ -324,7 +324,6 @@ def import_comissions_by_categories_from_ozon_api_to_file(file_path: str):
         "trading_scheme",
         "value",
         "commission_type",
-        "delivery_location",
     ]
     write_headers_to_csv(file_path, fieldnames)
     limit = 1000
@@ -369,7 +368,6 @@ def import_comissions_by_categories_from_ozon_api_to_file(file_path: str):
                     "trading_scheme": trad_scheme,
                     "value": percent,
                     "commission_type": "percent",
-                    "delivery_location": "",
                 }
                 commissions_rows.append(row)
 
@@ -506,12 +504,7 @@ def import_products_from_ozon_api_to_file(file_path: str):
         "height",
         "weight",
         "seller_name",
-        "lower_threshold",
-        "upper_threshold",
-        "coefficient",
-        "percent",
         "trading_scheme",
-        "delivery_location",
         "price",
         "old_price",
         *list(ALL_COMMISSIONS.keys()),
@@ -569,11 +562,6 @@ def import_products_from_ozon_api_to_file(file_path: str):
                     "height": dimensions["height"],
                     "weight": weight,
                     "seller_name": "Продавец",
-                    "lower_threshold": 0,
-                    "upper_threshold": 0,
-                    "coefficient": 0,
-                    "percent": 0,
-                    "delivery_location": "",
                     "price": price,
                     "old_price": old_price,
                     **commissions,
