@@ -22,7 +22,6 @@ async def save_in_odoo_activity() -> NoReturn:
         data_content = file.read()
 
     data_dict = ast.literal_eval(data_content)
-    print(data_dict)
 
     from price_histry_competitors import activity_two
     activity_two(data_dict)
@@ -50,19 +49,20 @@ async def main():
 
     async with Worker(
         client,
-        task_queue="MPstats-task-queue",
+        task_queue="MP-stats-task-queue",
         workflows=[MPStatsWorkflow],
-        activities=[mp_parsing_api_activity, save_in_odoo_activity],
+        activities=[
+            mp_parsing_api_activity, 
+            save_in_odoo_activity
+        ],
     ):
-
-        handle = await client.start_workflow(
+        await client.execute_workflow(
             MPStatsWorkflow.run,
             id="MPstats-workflow-id",
             task_queue="MP-stats-task-queue",
         )
 
-        await handle.result()
-
 
 if __name__ == "__main__":
     asyncio.run(main())
+

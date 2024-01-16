@@ -1,5 +1,7 @@
+import ast
 import requests
 import json
+
 from datetime import datetime, timedelta
 
 
@@ -137,11 +139,12 @@ class PriceHistoryCompetitors:
         return response.json()
 
     def main(self):
-        res = self.get_request_count_competitors(
+        count_sku = self.get_request_count_competitors(
             path='/api/v1/price_history_competitors/count_records/'
         )
-        data = json.loads(res)
-        count_sku = data['total_records']
+        # data = json.loads(res)
+        # count_sku = data['total_records']
+        count_sku = 2
         print(count_sku)
 
         num_chunks = count_sku // self.chunk_size
@@ -154,7 +157,7 @@ class PriceHistoryCompetitors:
                 path='/api/v1/price_history_competitors/get_sku/',
                 range=i*self.chunk_size,
             )
-            list_sku = ["806886180", "	806861457", "1086276378"]
+            list_sku = ["207392166", "273856979"]
             print(list_sku)
 
             for sku in list_sku:
@@ -187,7 +190,14 @@ def main():
     model = PriceHistoryCompetitors(username, password, token_mp)
     model.main()
 
-def activity_two(data_dict):
+def activity_two():
     from secrets import username, password, token_mp
+    
+    with open('data.txt', 'r') as file:
+        data_content = file.read()
+
+    data_dict = ast.literal_eval(data_content)
+    print(data_dict)
+
     model = PriceHistoryCompetitors(username, password, token_mp)
     model.activity_two(data_dict)
