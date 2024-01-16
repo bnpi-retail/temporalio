@@ -27,10 +27,6 @@ class OzonNumberOfProducts(AuthOdoo):
 
         if response.status_code != 200:
             return response.status_code
-        return [
-            "679301130",
-            "669996337",
-        ]
         return response.json()
 
     def requests_ozon(self, skus: list):
