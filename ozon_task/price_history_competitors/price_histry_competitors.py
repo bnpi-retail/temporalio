@@ -157,7 +157,7 @@ class PriceHistoryCompetitors:
                 path='/api/v1/price_history_competitors/get_sku/',
                 range=i*self.chunk_size,
             )
-            list_sku = ["207392166", "273856979"]
+            # list_sku = ["207392166", "273856979"]
             print(list_sku)
 
             for sku in list_sku:

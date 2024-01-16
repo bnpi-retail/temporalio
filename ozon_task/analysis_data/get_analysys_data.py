@@ -29,9 +29,7 @@ class OzonAnalysisData(AuthOdoo):
         one_week_ago = today - timedelta(weeks=1)
         return today, one_week_ago
     
-    def requests_ozon(self) -> dict:
-        today, one_week_ago = self.get_days()
-
+    def requests_ozon(self, today, one_week_ago) -> dict:
         result = requests.post(
             "https://api-seller.ozon.ru/v1/analytics/data",
             headers=self.headers_ozon,
@@ -71,27 +69,29 @@ class OzonAnalysisData(AuthOdoo):
 
         return products
 
-    def send_to_odoo(self, data: dict) -> None:
+    def send_to_odoo(self, data: dict, today, one_week_ago) -> None:
         path = "api/v1/save-analysys-data-lots"
         endpoint = f"{self.url}{path}"
         headers = self.connect_to_odoo_api_with_auth()
-        data = {'data': str(data)}
+        data = {'data': str(data), 'today': today, 'one_week_ago': one_week_ago}
         response = requests.post(endpoint, headers=headers, data=data)
         
         if response.status_code != 200:
             raise requests.exceptions.RequestException()
         
     def main(self) -> None:
+        today, one_week_ago = self.get_days()
+
         while True:
             try:
-                data = self.requests_ozon()
+                data = self.requests_ozon(today, one_week_ago)
             except KeyError as e:
                 print(f'Error: status {self.offset}')
                 continue
             print(self.offset)
 
             data = self.treatment(data)
-            self.send_to_odoo(data)
+            self.send_to_odoo(data, today, one_week_ago)
 
             if len(data) != 1000: break
 
