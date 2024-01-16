@@ -324,7 +324,6 @@ def import_comissions_by_categories_from_ozon_api_to_file(file_path: str):
         "trading_scheme",
         "value",
         "commission_type",
-        "delivery_location",
     ]
     write_headers_to_csv(file_path, fieldnames)
     limit = 1000
@@ -369,7 +368,6 @@ def import_comissions_by_categories_from_ozon_api_to_file(file_path: str):
                     "trading_scheme": trad_scheme,
                     "value": percent,
                     "commission_type": "percent",
-                    "delivery_location": "",
                 }
                 commissions_rows.append(row)
 
@@ -492,6 +490,26 @@ def convert_datetime_str_to_ozon_date(datetime_str: str):
     return datetime_str.replace(" ", "T") + "Z"
 
 
+def get_image_urls_from_product_info_list(product_info_list: list) -> dict:
+    """Returns dict:
+    {
+        prod_id_1: [img1_url, ...],
+        ...
+        }
+    }
+    """
+    images = {}
+    for item in product_info_list:
+        prod_id = item["id"]
+        if item["primary_image"]:
+            images[prod_id] = [item["primary_image"]]
+        if item["images"]:
+            images[prod_id].extend(
+                url for url in item["images"] if url != item["primary_image"]
+            )
+    return images
+
+
 def import_products_from_ozon_api_to_file(file_path: str):
     fieldnames = [
         "categories",
@@ -506,14 +524,10 @@ def import_products_from_ozon_api_to_file(file_path: str):
         "height",
         "weight",
         "seller_name",
-        "lower_threshold",
-        "upper_threshold",
-        "coefficient",
-        "percent",
         "trading_scheme",
-        "delivery_location",
         "price",
         "old_price",
+        "img_urls",
         *list(ALL_COMMISSIONS.keys()),
     ]
     write_headers_to_csv(file_path, fieldnames)
@@ -530,10 +544,12 @@ def import_products_from_ozon_api_to_file(file_path: str):
         products_commissions = get_product_commissions(prod_ids, limit=limit)
 
         prod_info_list = get_product_info_list_by_product_id(prod_ids)
+        products_imgs_urls = get_image_urls_from_product_info_list(prod_info_list)
         products_skus = get_product_sku_from_product_info_list(prod_info_list)
 
         products_rows = []
         for i, prod in enumerate(products_attrs):
+            prod_id = prod["id"]
             attrs = prod["attributes"]
             for a in attrs:
                 if a["attribute_id"] == 9461:
@@ -545,7 +561,7 @@ def import_products_from_ozon_api_to_file(file_path: str):
                 if a["attribute_id"] == 22336:
                     keywords = a["values"][0]["value"]
 
-            id_on_platform = prod["id"]
+            id_on_platform = prod_id
             product_id = prod["offer_id"]
             name = prod["name"]
             dimensions = calculate_product_dimensions(prod)
@@ -554,7 +570,8 @@ def import_products_from_ozon_api_to_file(file_path: str):
             old_price = products_prices[id_on_platform]["old_price"]
             trading_schemes = products_trading_schemes[id_on_platform]
             commissions = products_commissions[id_on_platform]
-            sku = products_skus[prod["id"]]
+            sku = products_skus[prod_id]
+            imgs_urls = products_imgs_urls[prod_id]
 
             for trad_scheme in trading_schemes:
                 row = {
@@ -569,13 +586,9 @@ def import_products_from_ozon_api_to_file(file_path: str):
                     "height": dimensions["height"],
                     "weight": weight,
                     "seller_name": "Продавец",
-                    "lower_threshold": 0,
-                    "upper_threshold": 0,
-                    "coefficient": 0,
-                    "percent": 0,
-                    "delivery_location": "",
                     "price": price,
                     "old_price": old_price,
+                    "img_urls": imgs_urls,
                     **commissions,
                 }
 

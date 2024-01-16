@@ -78,6 +78,32 @@ async def activity_import_transactions_from_prev_month():
 
 
 @activity.defn
+async def activity_import_transactions_from_prev_2_years():
+    date_from = datetime.combine(datetime.now(), time.min) - timedelta(days=730)
+    string_date_from = convert_datetime_str_to_ozon_date(str(date_from))
+
+    date_to = datetime.combine(datetime.now(), time.min) - timedelta(days=702)
+    string_date_to = convert_datetime_str_to_ozon_date(str(date_to))
+    today = datetime.now()
+
+    while date_to < today:
+        print(f"Transactions from {string_date_from} ---------- to {string_date_to}")
+        next_page = 1
+        while next_page != "Successfully imported all transactions!":
+            next_page = import_transactions_from_ozon_api_to_file(
+                file_path=TRANSACTIONS_PATH,
+                date_from=string_date_from,
+                date_to=string_date_to,
+                next_page=next_page,
+            )
+
+        date_from = date_to
+        date_to = date_to + timedelta(days=28)
+        string_date_from = convert_datetime_str_to_ozon_date(str(date_from))
+        string_date_to = convert_datetime_str_to_ozon_date(str(date_to))
+
+
+@activity.defn
 async def activity_write_transactions_to_odoo():
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
     divide_csv_into_chunks(TRANSACTIONS_PATH)
