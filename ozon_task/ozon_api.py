@@ -1,3 +1,4 @@
+import copy
 import csv
 import json
 
@@ -707,6 +708,70 @@ def import_stocks_from_ozon_api_to_file(file_path: str):
 
         with open(file_path, "a", newline="") as csvfile:
             for prod in stocks_rows:
+                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                writer.writerow(prod)
+
+    return
+
+
+def import_prices_from_ozon_api_to_file(file_path: str):
+    fieldnames = [
+        "id_on_platform",
+        "price",
+        "old_price",
+        "ext_comp_min_price",
+        "ozon_comp_min_price",
+        "self_marketplaces_min_price",
+        "price_index",
+    ]
+    write_headers_to_csv(file_path, fieldnames)
+    limit = 1000
+    last_id = ""
+    products = ["" for _ in range(limit)]
+    while len(products) == limit:
+        products, last_id = get_product(limit=limit, last_id=last_id)
+        prod_ids = get_product_id(products)
+        prod_info_list = get_product_info_list_by_product_id(prod_ids)
+        products_skus = get_product_sku_from_product_info_list(prod_info_list)
+        products_price_info = get_product_prices(prod_ids, limit=limit)
+        prices_rows = []
+        for prod_id in prod_ids:
+            _price_info = products_price_info[prod_id]
+            price = _price_info["price"]["price"]
+            old_price = _price_info["price"]["old_price"]
+            ext_comp_min_price = _price_info["price_indexes"]["external_index_data"][
+                "minimal_price"
+            ]
+            ozon_comp_min_price = _price_info["price_indexes"]["ozon_index_data"][
+                "minimal_price"
+            ]
+            self_marketplaces_min_price = _price_info["price_indexes"][
+                "self_marketplaces_index_data"
+            ]["minimal_price"]
+            price_index = _price_info["price_indexes"]["price_index"]
+
+            row = {
+                "price": price,
+                "old_price": old_price,
+                "ext_comp_min_price": ext_comp_min_price,
+                "ozon_comp_min_price": ozon_comp_min_price,
+                "self_marketplaces_min_price": self_marketplaces_min_price,
+                "price_index": price_index,
+            }
+            sku = products_skus[prod_id]
+            if isinstance(sku, dict):
+                for tr_scheme, sku_number in sku.items():
+                    new_row = copy.deepcopy(row)
+                    new_row["id_on_platform"] = sku_number
+                    prices_rows.append(new_row)
+                    print(f"Product {sku_number} prices were imported")
+            else:
+                row["id_on_platform"] = sku
+                prices_rows.append(row)
+                print(f"Product {sku} prices were imported")
+
+        with open(file_path, "a", newline="") as csvfile:
+            for prod in prices_rows:
                 writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
                 writer.writerow(prod)
 
