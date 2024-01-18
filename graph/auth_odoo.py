@@ -10,9 +10,9 @@ load_dotenv()
 class AuthOdoo:
     def __init__(self) -> None:
         self.url = 'http://0.0.0.0:8070/'
-        self.username = getenv('username')
-        self.password = getenv('password')
-        self.db = getenv('db_odoo')
+        self.username = 'admin'
+        self.password = 'TyXdcirZQYQp5r7'
+        self.db = 'db_odoo'
 
     def connect_to_odoo_api_with_auth(self) -> dict:
         session_url = f'{self.url}/web/session/authenticate'
