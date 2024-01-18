@@ -64,28 +64,16 @@ class DrawOdoo(AuthOdoo):
             plt.legend()
 
             plt.xticks(rotation=45)
-            plt.gca().xaxis.set_major_locator(mdates.WeekdayLocator(interval=2))
-            plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+            plt.gca().xaxis.set_major_locator(mdates.MonthLocator())
+            plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
 
             plt.yticks(np.arange(min(qty), max(qty) + 1, step=1))
 
             plt.tight_layout()
             plt.savefig(f'/home/sammy/static/images/odoo/{product_id}.png')
 
-
-    # def send_to_odoo(self, images: list) -> None:
-    #     path = "api/v1/save-images-for-lots"
-    #     endpoint = f"{self.url}{path}"
-    #     headers = self.connect_to_odoo_api_with_auth()
-    #     data = {'data': str(data), 'today': today, 'one_week_ago': one_week_ago}
-    #     response = requests.post(endpoint, headers=headers, data=data)
-        
-    #     if response.status_code != 200:
-    #         raise requests.exceptions.RequestException()
-    
     def main(self) -> None:
         data = self.get_data_for_graphs()
         self.treatment(data)
-        # self.send_to_odoo(data, images)
         
 DrawOdoo().main()
