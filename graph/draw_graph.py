@@ -27,7 +27,7 @@ class DrawOdoo(AuthOdoo):
         path = "api/v1/get-data-for-draw-graphs"
         endpoint = f"{self.url}{path}"
         headers = self.connect_to_odoo_api_with_auth()
-        response = requests.post(endpoint, headers=headers)
+        response = requests.get(endpoint, headers=headers)
         
         if response.status_code != 200:
             print(response.status_code)
