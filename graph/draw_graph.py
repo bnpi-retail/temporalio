@@ -70,7 +70,7 @@ class DrawOdoo(AuthOdoo):
             plt.yticks(np.arange(min(qty), max(qty) + 1, step=1))
 
             plt.tight_layout()
-            plt.savefig(f'../static/images/odoo/{product_id}.png')
+            plt.savefig(f'/home/sammy/static/images/odoo/{product_id}.png')
 
 
     # def send_to_odoo(self, images: list) -> None:
