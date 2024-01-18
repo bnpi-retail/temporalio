@@ -30,6 +30,7 @@ class DrawOdoo(AuthOdoo):
         response = requests.post(endpoint, headers=headers)
         
         if response.status_code != 200:
+            print(response.status_code)
             raise requests.exceptions.RequestException()
         
         return response.json()
