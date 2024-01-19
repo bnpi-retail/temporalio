@@ -777,3 +777,221 @@ def import_prices_from_ozon_api_to_file(file_path: str):
                 writer.writerow(prod)
 
     return
+
+
+# Отправления
+def get_postings_fbo(date_from: str, date_to: str, limit=1000, offset=0):
+    """
+    Возвращает список отправлений FBO за указанный период времени.
+    Если период больше года, вернётся ошибка PERIOD_IS_TOO_LONG.
+    """
+    response = requests.post(
+        "https://api-seller.ozon.ru/v2/posting/fbo/list",
+        headers=headers,
+        data=json.dumps(
+            {
+                "dir": "ASC",
+                "filter": {
+                    "since": date_from,
+                    "status": "",
+                    "to": date_to,
+                },
+                "limit": limit,
+                "offset": offset,
+                "with": {"analytics_data": True, "financial_data": True},
+            }
+        ),
+    ).json()
+    result = response["result"]
+    return result
+
+
+def get_postings_fbs(date_from: str, date_to: str, limit=1000, offset=0):
+    """
+    Возвращает список отправлений FBS за указанный период времени (не больше 1 года)
+    """
+    response = requests.post(
+        "https://api-seller.ozon.ru/v3/posting/fbs/list",
+        headers=headers,
+        data=json.dumps(
+            {
+                "dir": "ASC",
+                "filter": {
+                    "since": date_from,
+                    "status": "",
+                    "to": date_to,
+                },
+                "limit": limit,
+                "offset": offset,
+                "with": {
+                    "analytics_data": True,
+                    "barcodes": True,
+                    "financial_data": True,
+                    "translit": True,
+                },
+            }
+        ),
+    ).json()
+    result = response["result"]["postings"]
+    return result
+
+
+def import_postings_from_ozon_api_to_file(
+    file_path: str,
+    date_from: str,
+    date_to: str,
+):
+    """Import postings for both trading schemes FBS and FBO into csv file to upload in ozon.posting model"""
+    fieldnames = [
+        "in_process_at",
+        "trading_scheme",
+        "posting_number",
+        "order_id",
+        "status",
+        "skus",
+        "region",
+        "city",
+        "warehouse_id",
+        "warehouse_name",
+        "cluster_from",
+        "cluster_to",
+    ]
+    write_headers_to_csv(file_path, fieldnames)
+    limit = 1000
+    offset = 0
+    while True:
+        postings_fbo = get_postings_fbo(
+            date_from=date_from, date_to=date_to, limit=limit, offset=offset
+        )
+        postings_fbs = get_postings_fbs(
+            date_from=date_from, date_to=date_to, limit=limit, offset=offset
+        )
+
+        if len(postings_fbo) == 0 and len(postings_fbs) == 0:
+            break
+        offset += 1000
+
+        postings_rows = []
+        for posting in postings_fbo + postings_fbs:
+            in_process_at = posting["in_process_at"]
+            trading_scheme = "FBS" if posting.get("delivery_method") else "FBO"
+            posting_number = posting["posting_number"]
+            order_id = posting["order_id"]
+            status = posting["status"]
+            # TODO: какие статусы брать?
+            if status not in ["delivered", "cancelled"]:
+                continue
+            skus = [i["sku"] for i in posting["products"]]
+            region = posting["analytics_data"]["region"]
+            city = posting["analytics_data"]["city"]
+            warehouse_id = posting["analytics_data"]["warehouse_id"]
+            if trading_scheme == "FBS":
+                warehouse_name = posting["analytics_data"]["warehouse"]
+            else:
+                warehouse_name = posting["analytics_data"]["warehouse_name"]
+            cluster_from = posting["financial_data"]["cluster_from"]
+            cluster_to = posting["financial_data"]["cluster_to"]
+            row = {
+                "in_process_at": in_process_at,
+                "trading_scheme": trading_scheme,
+                "posting_number": posting_number,
+                "order_id": order_id,
+                "status": status,
+                "skus": skus,
+                "region": region,
+                "city": city,
+                "warehouse_id": warehouse_id,
+                "warehouse_name": warehouse_name,
+                "cluster_from": cluster_from,
+                "cluster_to": cluster_to,
+            }
+            postings_rows.append(row)
+
+        with open(file_path, "a", newline="") as csvfile:
+            for row in postings_rows:
+                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                writer.writerow(row)
+
+    return "Successfully imported all postings!"
+
+
+# Поставки FBO
+def get_fbo_supply_orders(page=1):
+    """Возвращает список завершенных заявок на поставку на склад Ozon (FBO)"""
+    response = requests.post(
+        "https://api-seller.ozon.ru/v1/supply-order/list",
+        headers=headers,
+        data=json.dumps({"page": page, "page_size": 100, "states": ["COMPLETED"]}),
+    ).json()
+    return response["supply_orders"], response["has_next"]
+
+
+def get_fbo_supply_order_products(supply_order_id: int, page=1):
+    """Возвращает список товаров и их кол-ва в заявке на поставку на склад Ozon (FBO)"""
+    response = requests.post(
+        "https://api-seller.ozon.ru/v1/supply-order/items",
+        headers=headers,
+        data=json.dumps(
+            {"page": page, "page_size": 100, "supply_order_id": supply_order_id}
+        ),
+    ).json()
+    products = [{"sku": i["sku"], "qty": i["quantity"]} for i in response["items"]]
+
+    return products, response["has_next"]
+
+
+def import_fbo_supply_orders_from_ozon_api_to_file(file_path: str):
+    """Import postings for both trading schemes FBS and FBO into csv file to upload in ozon.posting model"""
+    fieldnames = [
+        "supply_order_id",
+        "created_at",
+        "supply_date",
+        "total_items_count",
+        "total_quantity",
+        "warehouse_id",
+        "warehouse_name",
+        "items",
+    ]
+    write_headers_to_csv(file_path, fieldnames)
+    supply_orders = []
+    has_next = True
+    page = 1
+    while has_next:
+        s_orders, has_next = get_fbo_supply_orders(page=page)
+        supply_orders.extend(s_orders)
+        page += 1
+
+    supply_orders_rows = []
+    for order in supply_orders:
+        order_id = order["supply_order_id"]
+        has_next = True
+        page = 1
+        order_products = []
+        while has_next:
+            products, has_next = get_fbo_supply_order_products(
+                supply_order_id=order_id, page=page
+            )
+            order_products.extend(products)
+            page += 1
+
+        supply_date = None
+        if timeslot := order.get("local_timeslot"):
+            supply_date = timeslot["from"]
+        row = {
+            "supply_order_id": order_id,
+            "created_at": order["created_at"],
+            "supply_date": supply_date,
+            "total_items_count": order["total_items_count"],
+            "total_quantity": order["total_quantity"],
+            "warehouse_id": order["supply_warehouse"]["warehouse_id"],
+            "warehouse_name": order["supply_warehouse"]["name"],
+            "items": order_products,
+        }
+        supply_orders_rows.append(row)
+
+    with open(file_path, "a", newline="") as csvfile:
+        for row in supply_orders_rows:
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writerow(row)
+
+    return "Successfully imported all FBO supply orders!"

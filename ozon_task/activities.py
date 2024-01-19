@@ -12,6 +12,8 @@ from ozon_api import (
     import_transactions_from_ozon_api_to_file,
     import_stocks_from_ozon_api_to_file,
     import_prices_from_ozon_api_to_file,
+    import_postings_from_ozon_api_to_file,
+    import_fbo_supply_orders_from_ozon_api_to_file,
     convert_datetime_str_to_ozon_date,
 )
 from fill_db import (
@@ -29,6 +31,8 @@ TRANSACTIONS_PATH = "./transactions.csv"
 PRODUCTS_PATH = "./products.csv"
 STOCKS_PATH = "./stocks.csv"
 PRICES_PATH = "./prices.csv"
+POSTINGS_PATH = "./postings.csv"
+FBO_SUPPLY_ORDERS_PATH = "./fbo_supply_orders.csv"
 
 
 @activity.defn
@@ -179,6 +183,51 @@ async def activity_write_prices_to_odoo():
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
     divide_csv_into_chunks(PRICES_PATH)
     url = "http://0.0.0.0:8070/import/prices_from_ozon_api_to_file"
+
+    for fpath in os.listdir():
+        if fpath.startswith("chunk"):
+            send_csv_file_to_ozon_import_file(
+                url=url, session_id=session_id, file_path=fpath
+            )
+
+
+@activity.defn
+async def activity_import_postings():
+    date_from = convert_datetime_str_to_ozon_date(
+        str(datetime.combine(datetime.now(), time.min) - timedelta(days=1))
+    )
+    date_to = convert_datetime_str_to_ozon_date(
+        str(datetime.combine(datetime.now(), time.max) - timedelta(days=1))
+    )
+
+    import_postings_from_ozon_api_to_file(
+        file_path=POSTINGS_PATH, date_from=date_from, date_to=date_to
+    )
+
+
+@activity.defn
+async def activity_write_postings_to_odoo():
+    session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
+    divide_csv_into_chunks(POSTINGS_PATH)
+    url = "http://0.0.0.0:8070/import/postings_from_ozon_api_to_file"
+
+    for fpath in os.listdir():
+        if fpath.startswith("chunk"):
+            send_csv_file_to_ozon_import_file(
+                url=url, session_id=session_id, file_path=fpath
+            )
+
+
+@activity.defn
+async def activity_import_fbo_supply_orders():
+    import_fbo_supply_orders_from_ozon_api_to_file(FBO_SUPPLY_ORDERS_PATH)
+
+
+@activity.defn
+async def activity_write_fbo_supply_orders_to_odoo():
+    session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
+    divide_csv_into_chunks(FBO_SUPPLY_ORDERS_PATH)
+    url = "http://0.0.0.0:8070/import/fbo_supply_orders_from_ozon_api_to_file"
 
     for fpath in os.listdir():
         if fpath.startswith("chunk"):
