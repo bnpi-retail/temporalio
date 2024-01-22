@@ -5,6 +5,7 @@ from itertools import groupby
 from operator import itemgetter
 import os
 import requests
+from requests.exceptions import JSONDecodeError
 
 from dotenv import load_dotenv
 
@@ -208,11 +209,17 @@ def get_product_info_list_by_sku(sku_list: list):
 
 
 def get_product_info_list_by_product_id(product_id_list: list):
-    result = requests.post(
+    response = requests.post(
         "https://api-seller.ozon.ru/v2/product/info/list",
         headers=headers,
         data=json.dumps({"product_id": product_id_list}),
-    ).json()
+    )
+    try:
+        result = response.json()
+    except JSONDecodeError as e:
+        print(f"Got response: {response}")
+        print(f"JSONDecodeError occured -> {e}")
+        raise
     return result["result"]["items"]
 
 
@@ -653,7 +660,7 @@ def get_product_stocks(product_ids: list, limit=1000) -> dict:
         ...
     }
     """
-    result = requests.post(
+    response = requests.post(
         "https://api-seller.ozon.ru/v3/product/info/stocks",
         headers=headers,
         data=json.dumps(
@@ -664,7 +671,15 @@ def get_product_stocks(product_ids: list, limit=1000) -> dict:
                 "limit": limit,
             }
         ),
-    ).json()["result"]["items"]
+    )
+    try:
+        result = response.json()
+    except JSONDecodeError as e:
+        print(f"Got response: {response}")
+        print(f"JSONDecodeError occured -> {e}")
+        raise
+
+    result = result["result"]["items"]
     stocks = {}
     for prod in result:
         prod_id = prod["product_id"]
