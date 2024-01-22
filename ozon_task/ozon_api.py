@@ -4,6 +4,7 @@ import json
 from itertools import groupby
 from operator import itemgetter
 import os
+from time import sleep
 import requests
 from requests.exceptions import JSONDecodeError
 
@@ -209,11 +210,18 @@ def get_product_info_list_by_sku(sku_list: list):
 
 
 def get_product_info_list_by_product_id(product_id_list: list):
-    response = requests.post(
-        "https://api-seller.ozon.ru/v2/product/info/list",
-        headers=headers,
-        data=json.dumps({"product_id": product_id_list}),
-    )
+    attempts = 0
+    while attempts < 3:
+        response = requests.post(
+            "https://api-seller.ozon.ru/v2/product/info/list",
+            headers=headers,
+            data=json.dumps({"product_id": product_id_list}),
+        )
+        if response.status_code == 200:
+            break
+        else:
+            sleep(3)
+            attempts += 1
     try:
         result = response.json()
     except JSONDecodeError as e:
@@ -660,18 +668,26 @@ def get_product_stocks(product_ids: list, limit=1000) -> dict:
         ...
     }
     """
-    response = requests.post(
-        "https://api-seller.ozon.ru/v3/product/info/stocks",
-        headers=headers,
-        data=json.dumps(
-            {
-                "filter": {
-                    "product_id": [str(prod_id) for prod_id in product_ids],
-                },
-                "limit": limit,
-            }
-        ),
-    )
+    attempts = 0
+    while attempts < 3:
+        response = requests.post(
+            "https://api-seller.ozon.ru/v3/product/info/stocks",
+            headers=headers,
+            data=json.dumps(
+                {
+                    "filter": {
+                        "product_id": [str(prod_id) for prod_id in product_ids],
+                    },
+                    "limit": limit,
+                }
+            ),
+        )
+        if response.status_code == 200:
+            break
+        else:
+            sleep(3)
+            attempts += 1
+
     try:
         result = response.json()
     except JSONDecodeError as e:
