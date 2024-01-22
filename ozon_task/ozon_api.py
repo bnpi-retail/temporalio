@@ -1,7 +1,8 @@
 import copy
 import csv
 import json
-
+from itertools import groupby
+from operator import itemgetter
 import os
 import requests
 
@@ -236,6 +237,20 @@ def get_product_sku_from_product_info_list(product_info_list: list) -> dict:
                 multiple_skus[i["source"]] = i["sku"]
             sku[item["id"]] = multiple_skus
     return sku
+
+
+def get_product_sku_list_from_product_info_list(product_info_list: list) -> list:
+    """Returns list of skus. Can have different length from prod_info_list
+    due to possble multiple skus corresponding to single product_id
+    """
+    skus = []
+    for item in product_info_list:
+        if item["sku"] != 0:
+            skus.append(item["sku"])
+        else:
+            skus.append(item["fbo_sku"])
+            skus.append(item["fbs_sku"])
+    return skus
 
 
 def get_product_attributes(product_ids: list, limit=1000) -> list:
@@ -665,12 +680,41 @@ def get_product_stocks(product_ids: list, limit=1000) -> dict:
     return stocks
 
 
+def get_fbs_warehouses_stocks(skus: list) -> list:
+    """Returns list of dicts:
+    [{
+            "product_id": int,
+            "present": int,
+            "reserved": int,
+            "sku": int,
+            "warehouse_id": int,
+            "warehouse_name": str,
+            "fbs_sku": int
+        },
+    ...
+    ]
+    """
+    response = requests.post(
+        "https://api-seller.ozon.ru/v1/product/info/stocks-by-warehouse/fbs",
+        headers=headers,
+        data=json.dumps({"sku": skus}),
+    ).json()
+
+    return response["result"]
+
+
+def split_list(l, n):
+    k, m = divmod(len(l), n)
+    return (l[i * k + min(i, m) : (i + 1) * k + min(i + 1, m)] for i in range(n))
+
+
 def import_stocks_from_ozon_api_to_file(file_path: str):
     fieldnames = [
         "product_id",
         "id_on_platform",
         "stocks_fbs",
         "stocks_fbo",
+        "stocks_fbs_warehouses",
     ]
     write_headers_to_csv(file_path, fieldnames)
     limit = 1000
@@ -680,30 +724,25 @@ def import_stocks_from_ozon_api_to_file(file_path: str):
         products, last_id = get_product(limit=limit, last_id=last_id)
         prod_ids = get_product_id(products)
         prod_info_list = get_product_info_list_by_product_id(prod_ids)
-        products_skus = get_product_sku_from_product_info_list(prod_info_list)
-        stocks = get_product_stocks(product_ids=prod_ids, limit=limit)
+        total_stocks = get_product_stocks(product_ids=prod_ids, limit=limit)
+        products_skus = get_product_sku_list_from_product_info_list(prod_info_list)
+
+        products_skus_chunks = list(split_list(products_skus, 3))
         stocks_rows = []
-
-        for prod_id in prod_ids:
-            row = {"product_id": prod_id, "stocks_fbs": 0, "stocks_fbo": 0}
-            sku = products_skus[prod_id]
-            if isinstance(sku, dict):
-                for tr_scheme, sku_number in sku.items():
-                    new_row = {"product_id": prod_id, "stocks_fbs": 0, "stocks_fbo": 0}
-                    new_row["id_on_platform"] = sku_number
-                    stock = stocks[prod_id][tr_scheme]
-                    if tr_scheme == "fbs":
-                        new_row["stocks_fbs"] = stock
-                    elif tr_scheme == "fbo":
-                        new_row["stocks_fbo"] = stock
-
-                    stocks_rows.append(new_row)
-                    print(f"Product {sku_number} stocks were imported")
-            else:
-                row["id_on_platform"] = sku
-                stock = stocks[prod_id]
-                row["stocks_fbs"] = stock["fbs"]
-                row["stocks_fbo"] = stock["fbo"]
+        for l in products_skus_chunks:
+            stocks = get_fbs_warehouses_stocks(l)
+            stocks = groupby(stocks, key=itemgetter("sku"))
+            for sku, info in stocks:
+                stocks_fbs_warehouses = list(info)
+                prod_id = stocks_fbs_warehouses[0]["product_id"]
+                total_stock = total_stocks[prod_id]
+                row = {
+                    "product_id": prod_id,
+                    "id_on_platform": sku,
+                    "stocks_fbs": total_stock["fbs"],
+                    "stocks_fbo": total_stock["fbo"],
+                    "stocks_fbs_warehouses": stocks_fbs_warehouses,
+                }
                 stocks_rows.append(row)
                 print(f"Product {sku} stocks were imported")
 
