@@ -220,7 +220,7 @@ def get_product_info_list_by_product_id(product_id_list: list):
         if response.status_code == 200:
             break
         else:
-            sleep(3)
+            sleep(5)
             attempts += 1
     try:
         result = response.json()
@@ -685,7 +685,7 @@ def get_product_stocks(product_ids: list, limit=1000) -> dict:
         if response.status_code == 200:
             break
         else:
-            sleep(3)
+            sleep(5)
             attempts += 1
 
     try:
