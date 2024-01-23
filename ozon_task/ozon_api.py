@@ -739,6 +739,11 @@ def split_list(l, n):
     return (l[i * k + min(i, m) : (i + 1) * k + min(i + 1, m)] for i in range(n))
 
 
+def split_list_into_chunks_of_size_n(l, n):
+    for i in range(0, len(l), n):
+        yield l[i : i + n]
+
+
 def import_stocks_from_ozon_api_to_file(file_path: str):
     fieldnames = [
         "product_id",
@@ -1065,3 +1070,209 @@ def import_fbo_supply_orders_from_ozon_api_to_file(file_path: str):
             writer.writerow(row)
 
     return "Successfully imported all FBO supply orders!"
+
+
+# Акции
+def get_actions() -> list:
+    """Возвращает список актуальных акций, в которых можно участвовать."""
+    result = requests.get(
+        "https://api-seller.ozon.ru/v1/actions", headers=headers
+    ).json()
+    # print(result)
+    return result["result"]
+
+
+def get_action_candidates(action_id: int, limit=1000, offset=0):
+    """
+    Возвращает список товаров, которые могут участвовать в акции, по её id
+    и общее количество товаров, которое доступно для акции.
+    """
+    attempts = 0
+    while attempts < 3:
+        response = requests.post(
+            "https://api-seller.ozon.ru/v1/actions/candidates",
+            headers=headers,
+            data=json.dumps({"action_id": action_id, "limit": limit, "offset": offset}),
+        )
+        if response.status_code == 200:
+            break
+        else:
+            sleep(3)
+            attempts += 1
+    result = response.json()
+    return result["result"]["products"], result["result"]["total"]
+
+
+def get_action_participants(action_id: int, limit=1000, offset=0):
+    """
+    Возвращает список товаров, участвующих в акции, по её id
+    и общее количество товаров, участвующих в акции.
+    """
+    attempts = 0
+    while attempts < 3:
+        response = requests.post(
+            "https://api-seller.ozon.ru/v1/actions/products",
+            headers=headers,
+            data=json.dumps({"action_id": action_id, "limit": limit, "offset": offset}),
+        )
+        if response.status_code == 200:
+            break
+        else:
+            sleep(3)
+            attempts += 1
+    result = response.json()
+    return result["result"]["products"], result["result"]["total"]
+
+
+def import_actions_from_ozon_api_to_file(file_path: str):
+    fieldnames = [
+        "action_id",
+        "name",
+        "with_targeting",
+        "date_start",
+        "date_end",
+        "action_type",
+        "discount_type",
+        "discount_value",
+        "potential_products_count",
+        "is_participating",
+        "participating_products_count",
+        "description",
+        "action_candidates",
+        "action_participants",
+    ]
+    write_headers_to_csv(file_path, fieldnames)
+
+    actions = get_actions()
+    print(f"Total actions: {len(actions)}")
+
+    with open(file_path, "a", newline="") as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        for idx, a in enumerate(actions):
+            candidates = []
+            participants = []
+            action_id = a["id"]
+            name = a["title"]
+            is_participating = a["is_participating"]
+            potential_products_count = a["potential_products_count"]
+            participating_products_count = a["participating_products_count"]
+
+            # Candidates
+            offset = 0
+            while offset < potential_products_count:
+                cands, total = get_action_candidates(action_id, offset=offset)
+                candidates.extend(cands)
+                offset += 1000
+
+            prod_ids = []
+            prod_id_max_action_price = {}
+            for can in candidates:
+                prod_ids.append(can["id"])
+                prod_id_max_action_price[can["id"]] = can["max_action_price"]
+
+            prod_ids_chunks = list(split_list_into_chunks_of_size_n(prod_ids, 1000))
+            total_product_info_list = []
+            for chunk in prod_ids_chunks:
+                product_info_chunk = get_product_info_list_by_product_id(
+                    product_id_list=chunk
+                )
+                total_product_info_list.extend(product_info_chunk)
+
+            action_candidates = []
+            for i in total_product_info_list:
+                item_id = i["id"]
+                sku = i["sku"]
+                price = prod_id_max_action_price[item_id]
+                if sku != 0:
+                    action_candidates.append(
+                        {"sku": sku, "product_id": item_id, "max_action_price": price}
+                    )
+                else:
+                    action_candidates.append(
+                        {
+                            "sku": i["fbs_sku"],
+                            "product_id": item_id,
+                            "max_action_price": price,
+                        }
+                    )
+                    action_candidates.append(
+                        {
+                            "sku": i["fbo_sku"],
+                            "product_id": item_id,
+                            "max_action_price": price,
+                        }
+                    )
+            action_candidates_str = json.dumps(action_candidates)
+            # Participants
+            action_participants = []
+            if is_participating:
+                offset = 0
+                while offset < participating_products_count:
+                    parts, total = get_action_participants(action_id, offset=offset)
+                    participants.extend(parts)
+                    offset += 1000
+                prod_ids = []
+                prod_id_max_action_price = {}
+                for par in participants:
+                    prod_ids.append(par["id"])
+                    prod_id_max_action_price[par["id"]] = par["max_action_price"]
+
+                prod_ids_chunks = list(split_list_into_chunks_of_size_n(prod_ids, 1000))
+                total_product_info_list = []
+                for chunk in prod_ids_chunks:
+                    product_info_chunk = get_product_info_list_by_product_id(
+                        product_id_list=chunk
+                    )
+                    total_product_info_list.extend(product_info_chunk)
+
+                for i in total_product_info_list:
+                    item_id = i["id"]
+                    sku = i["sku"]
+                    price = prod_id_max_action_price[item_id]
+                    if sku != 0:
+                        action_participants.append(
+                            {
+                                "sku": sku,
+                                "product_id": item_id,
+                                "max_action_price": price,
+                            }
+                        )
+                    else:
+                        action_participants.append(
+                            {
+                                "sku": i["fbs_sku"],
+                                "product_id": item_id,
+                                "max_action_price": price,
+                            }
+                        )
+                        action_participants.append(
+                            {
+                                "sku": i["fbo_sku"],
+                                "product_id": item_id,
+                                "max_action_price": price,
+                            }
+                        )
+
+            action_participants_str = json.dumps(action_participants)
+
+            row = {
+                "action_id": action_id,
+                "name": name,
+                "with_targeting": a["with_targeting"],
+                "date_start": a["date_start"],
+                "date_end": a["date_end"],
+                "description": a["description"],
+                "action_type": a["action_type"],
+                "discount_type": a["discount_type"],
+                "discount_value": a["discount_value"],
+                "potential_products_count": potential_products_count,
+                "action_candidates": action_candidates_str,
+                "is_participating": is_participating,
+                "participating_products_count": participating_products_count,
+                "action_participants": action_participants_str,
+            }
+
+            writer.writerow(row)
+            print(f"""{idx} - Action "{name}" was imported""")
+
+    return "Successfully imported all actions!"

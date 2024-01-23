@@ -14,6 +14,7 @@ from ozon_api import (
     import_prices_from_ozon_api_to_file,
     import_postings_from_ozon_api_to_file,
     import_fbo_supply_orders_from_ozon_api_to_file,
+    import_actions_from_ozon_api_to_file,
     convert_datetime_str_to_ozon_date,
 )
 from fill_db import (
@@ -33,6 +34,7 @@ STOCKS_PATH = "./stocks.csv"
 PRICES_PATH = "./prices.csv"
 POSTINGS_PATH = "./postings.csv"
 FBO_SUPPLY_ORDERS_PATH = "./fbo_supply_orders.csv"
+ACTIONS_PATH = "./actions.csv"
 
 
 @activity.defn
@@ -234,3 +236,17 @@ async def activity_write_fbo_supply_orders_to_odoo():
             send_csv_file_to_ozon_import_file(
                 url=url, session_id=session_id, file_path=fpath
             )
+
+
+@activity.defn
+async def activity_import_ozon_actions():
+    import_actions_from_ozon_api_to_file(ACTIONS_PATH)
+
+
+@activity.defn
+async def activity_write_ozon_actions_to_odoo():
+    session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
+    url = "http://0.0.0.0:8070/import/ozon_actions"
+    send_csv_file_to_ozon_import_file(
+        url=url, session_id=session_id, file_path=ACTIONS_PATH
+    )
