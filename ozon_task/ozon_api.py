@@ -210,48 +210,12 @@ def get_product_info_list_by_sku(sku_list: list):
 
 
 def get_product_info_list_by_product_id(product_id_list: list):
-    attempts = 0
-    while attempts < 3:
-        response = requests.post(
-            "https://api-seller.ozon.ru/v2/product/info/list",
-            headers=headers,
-            data=json.dumps({"product_id": product_id_list}),
-        )
-        if response.status_code == 200:
-            break
-        else:
-            sleep(5)
-            attempts += 1
-    try:
-        result = response.json()
-    except JSONDecodeError as e:
-        print(f"Got response: {response}")
-        print(f"JSONDecodeError occured -> {e}")
-        raise
+    result = requests.post(
+        "https://api-seller.ozon.ru/v2/product/info/list",
+        headers=headers,
+        data=json.dumps({"product_id": product_id_list}),
+    ).json()
     return result["result"]["items"]
-
-
-def get_product_sku_from_product_info_list(product_info_list: list) -> dict:
-    """Returns dict:
-    {
-        prod_id_1: sku_1,
-        ...
-        prod_id_n: {
-            'fbs': sku_n_1,
-            'fbo': sku_n_2
-        }
-    }
-    """
-    sku = {}
-    for item in product_info_list:
-        if item["sku"] != 0:
-            sku[item["id"]] = item["sku"]
-        else:
-            multiple_skus = {}
-            for i in item["sources"]:
-                multiple_skus[i["source"]] = i["sku"]
-            sku[item["id"]] = multiple_skus
-    return sku
 
 
 def get_product_sku_list_from_product_info_list(product_info_list: list) -> list:
@@ -265,6 +229,53 @@ def get_product_sku_list_from_product_info_list(product_info_list: list) -> list
         else:
             skus.append(item["fbo_sku"])
             skus.append(item["fbs_sku"])
+    return skus
+
+
+def get_sku_product_id_list(product_info_list: list) -> list:
+    """Returns a list of dicts.
+    Contain unique skus
+    2 different skus can correspond to 1 prod_id.
+    [
+        {
+            sku_1: prod_id_1
+        },
+        {
+            sku_2: prod_id_1
+        },
+        ...
+    ]
+    """
+    sku_prod_id = []
+    for item in product_info_list:
+        item_id = item["id"]
+        sku = item["sku"]
+        if sku != 0:
+            sku_prod_id.append({sku: item_id})
+        else:
+            sku_prod_id.append({item["fbo_sku"]: item_id})
+            sku_prod_id.append({item["fbs_sku"]: item_id})
+    return sku_prod_id
+
+
+def get_product_sku_from_product_info_list(product_info_list: list) -> dict:
+    """Returns dict:
+    {
+        prod_id_1: sku_1,
+        ...
+        prod_id_n: {
+            'fbs': sku_n_1,
+            'fbo': sku_n_2
+        }
+    }
+    """
+    skus = {}
+    for item in product_info_list:
+        skus[item["id"]] = {
+            "sku": item["sku"],
+            "fbo_sku": item["fbo_sku"],
+            "fbs_sku": item["fbs_sku"],
+        }
     return skus
 
 
@@ -330,7 +341,7 @@ def get_product_trading_schemes(product_ids: list, limit=1000) -> dict:
             if stock["present"] != 0 and stock["type"] in ["fbs", "fbo"]
         ]
         products_trading_schemes[item["product_id"]] = (
-            trading_schemes if trading_schemes else [""]
+            ", ".join(trading_schemes) if trading_schemes else "undefined"
         )
 
     return products_trading_schemes
@@ -457,7 +468,7 @@ def import_transactions_from_ozon_api_to_file(
         "order_date",
         "name",
         "amount",
-        "product_ids_on_platform",
+        "product_skus",
         "services",
         "posting_number",
     ]
@@ -502,7 +513,7 @@ def import_transactions_from_ozon_api_to_file(
                 "order_date": order_date if order_date else transaction_date,
                 "name": name,
                 "amount": amount,
-                "product_ids_on_platform": product_skus,
+                "product_skus": product_skus,
                 "services": services,
                 "posting_number": posting_number,
             }
@@ -519,6 +530,10 @@ def import_transactions_from_ozon_api_to_file(
 
 def convert_datetime_str_to_ozon_date(datetime_str: str):
     return datetime_str.replace(" ", "T") + "Z"
+
+
+def convert_ozon_datetime_str_to_odoo_datetime_str(ozon_datetime_str: str):
+    return ozon_datetime_str.replace("T", " ").replace("Z", "")
 
 
 def get_image_urls_from_product_info_list(product_info_list: list) -> dict:
@@ -543,13 +558,16 @@ def get_image_urls_from_product_info_list(product_info_list: list) -> dict:
 
 def import_products_from_ozon_api_to_file(file_path: str):
     fieldnames = [
-        "categories",
         "id_on_platform",
+        "offer_id",
+        "sku",
+        "fbo_sku",
+        "fbs_sku",
+        "categories",
         "full_categories",
         "name",
         "description",
         "keywords",
-        "product_id",
         "length",
         "width",
         "height",
@@ -558,6 +576,10 @@ def import_products_from_ozon_api_to_file(file_path: str):
         "trading_scheme",
         "price",
         "old_price",
+        "ext_comp_min_price",
+        "ozon_comp_min_price",
+        "self_marketplaces_min_price",
+        "price_index",
         *list(ALL_COMMISSIONS.keys()),
         "img_urls",
     ]
@@ -565,7 +587,6 @@ def import_products_from_ozon_api_to_file(file_path: str):
     limit = 1000
     last_id = ""
     products = ["" for _ in range(limit)]
-    sku_added = {}
     while len(products) == limit:
         products, last_id = get_product(limit=limit, last_id=last_id)
         prod_ids = get_product_id(products)
@@ -573,14 +594,12 @@ def import_products_from_ozon_api_to_file(file_path: str):
         products_trading_schemes = get_product_trading_schemes(prod_ids, limit=limit)
         products_price_info = get_product_prices(prod_ids, limit=limit)
         products_commissions = get_product_commissions(prod_ids, limit=limit)
-
         prod_info_list = get_product_info_list_by_product_id(prod_ids)
         products_imgs_urls = get_image_urls_from_product_info_list(prod_info_list)
         products_skus = get_product_sku_from_product_info_list(prod_info_list)
-
         products_rows = []
-        for i, prod in enumerate(products_attrs):
-            prod_id = prod["id"]
+        for prod in products_attrs:
+            id_on_platform = prod["id"]
             attrs = prod["attributes"]
             for a in attrs:
                 if a["attribute_id"] == 9461:
@@ -592,64 +611,58 @@ def import_products_from_ozon_api_to_file(file_path: str):
                 if a["attribute_id"] == 22336:
                     keywords = a["values"][0]["value"]
 
-            id_on_platform = prod_id
-            product_id = prod["offer_id"]
+            offer_id = prod["offer_id"]
             name = prod["name"]
             dimensions = calculate_product_dimensions(prod)
             weight = calculate_product_weight_in_kg(prod)
             _price_info = products_price_info[id_on_platform]
             price = _price_info["price"]["price"]
             old_price = _price_info["price"]["old_price"]
-            trading_schemes = products_trading_schemes[id_on_platform]
+            ext_comp_min_price = _price_info["price_indexes"]["external_index_data"][
+                "minimal_price"
+            ]
+            ozon_comp_min_price = _price_info["price_indexes"]["ozon_index_data"][
+                "minimal_price"
+            ]
+            self_marketplaces_min_price = _price_info["price_indexes"][
+                "self_marketplaces_index_data"
+            ]["minimal_price"]
+            price_index = _price_info["price_indexes"]["price_index"]
+            trading_scheme = products_trading_schemes[id_on_platform]
             commissions = products_commissions[id_on_platform]
-            sku = products_skus[prod_id]
-            imgs_urls = products_imgs_urls[prod_id]
+            sku = products_skus[id_on_platform]["sku"]
+            fbo_sku = products_skus[id_on_platform]["fbo_sku"]
+            fbs_sku = products_skus[id_on_platform]["fbs_sku"]
+            imgs_urls = products_imgs_urls[id_on_platform]
 
-            for trad_scheme in trading_schemes:
-                row = {
-                    "categories": category_name,
-                    "full_categories": parent_category,
-                    "name": name,
-                    "description": description,
-                    "keywords": keywords,
-                    "product_id": product_id,
-                    "length": dimensions["length"],
-                    "width": dimensions["width"],
-                    "height": dimensions["height"],
-                    "weight": weight,
-                    "seller_name": "Продавец",
-                    "price": price,
-                    "old_price": old_price,
-                    **commissions,
-                    "img_urls": imgs_urls,
-                }
-
-                if isinstance(sku, dict):
-                    new_row = {}
-                    for tr_scheme, sku_number in sku.items():
-                        if sku_added.get(sku_number):
-                            continue
-                        new_row = {
-                            "id_on_platform": sku_number,
-                            "trading_scheme": tr_scheme.upper(),
-                            **row,
-                        }
-                        products_rows.append(new_row)
-                        print(f"Product {sku_number} was imported")
-                        sku_added[sku_number] = True
-
-                    continue
-
-                if sku_added.get(sku):
-                    continue
-                row["id_on_platform"] = sku
-                row["trading_scheme"] = (
-                    trad_scheme if trad_scheme == "" else ", ".join(trading_schemes)
-                )
-                products_rows.append(row)
-                print(f"Product {sku} was imported")
-                sku_added[sku] = True
-
+            row = {
+                "id_on_platform": id_on_platform,
+                "offer_id": offer_id,
+                "sku": sku,
+                "fbo_sku": fbo_sku,
+                "fbs_sku": fbs_sku,
+                "categories": category_name,
+                "full_categories": parent_category,
+                "name": name,
+                "description": description,
+                "keywords": keywords,
+                "length": dimensions["length"],
+                "width": dimensions["width"],
+                "height": dimensions["height"],
+                "weight": weight,
+                "seller_name": "Продавец",
+                "trading_scheme": trading_scheme,
+                "price": price,
+                "old_price": old_price,
+                "ext_comp_min_price": ext_comp_min_price,
+                "ozon_comp_min_price": ozon_comp_min_price,
+                "self_marketplaces_min_price": self_marketplaces_min_price,
+                "price_index": price_index,
+                **commissions,
+                "img_urls": imgs_urls,
+            }
+            products_rows.append(row)
+            print(f"Product {id_on_platform} was imported")
         with open(file_path, "a", newline="") as csvfile:
             for prod in products_rows:
                 writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
@@ -668,34 +681,18 @@ def get_product_stocks(product_ids: list, limit=1000) -> dict:
         ...
     }
     """
-    attempts = 0
-    while attempts < 3:
-        response = requests.post(
-            "https://api-seller.ozon.ru/v3/product/info/stocks",
-            headers=headers,
-            data=json.dumps(
-                {
-                    "filter": {
-                        "product_id": [str(prod_id) for prod_id in product_ids],
-                    },
-                    "limit": limit,
-                }
-            ),
-        )
-        if response.status_code == 200:
-            break
-        else:
-            sleep(5)
-            attempts += 1
-
-    try:
-        result = response.json()
-    except JSONDecodeError as e:
-        print(f"Got response: {response}")
-        print(f"JSONDecodeError occured -> {e}")
-        raise
-
-    result = result["result"]["items"]
+    result = requests.post(
+        "https://api-seller.ozon.ru/v3/product/info/stocks",
+        headers=headers,
+        data=json.dumps(
+            {
+                "filter": {
+                    "product_id": [str(prod_id) for prod_id in product_ids],
+                },
+                "limit": limit,
+            }
+        ),
+    ).json()["result"]["items"]
     stocks = {}
     for prod in result:
         prod_id = prod["product_id"]
@@ -735,6 +732,7 @@ def get_fbs_warehouses_stocks(skus: list) -> list:
 
 
 def split_list(l, n):
+    """Splits list into n chunks"""
     k, m = divmod(len(l), n)
     return (l[i * k + min(i, m) : (i + 1) * k + min(i + 1, m)] for i in range(n))
 
@@ -746,8 +744,8 @@ def split_list_into_chunks_of_size_n(l, n):
 
 def import_stocks_from_ozon_api_to_file(file_path: str):
     fieldnames = [
-        "product_id",
         "id_on_platform",
+        "sku",
         "stocks_fbs",
         "stocks_fbo",
         "stocks_fbs_warehouses",
@@ -773,8 +771,8 @@ def import_stocks_from_ozon_api_to_file(file_path: str):
                 prod_id = stocks_fbs_warehouses[0]["product_id"]
                 total_stock = total_stocks[prod_id]
                 row = {
-                    "product_id": prod_id,
-                    "id_on_platform": sku,
+                    "id_on_platform": prod_id,
+                    "sku": sku,
                     "stocks_fbs": total_stock["fbs"],
                     "stocks_fbo": total_stock["fbo"],
                     "stocks_fbs_warehouses": stocks_fbs_warehouses,
@@ -807,8 +805,6 @@ def import_prices_from_ozon_api_to_file(file_path: str):
     while len(products) == limit:
         products, last_id = get_product(limit=limit, last_id=last_id)
         prod_ids = get_product_id(products)
-        prod_info_list = get_product_info_list_by_product_id(prod_ids)
-        products_skus = get_product_sku_from_product_info_list(prod_info_list)
         products_price_info = get_product_prices(prod_ids, limit=limit)
         prices_rows = []
         for prod_id in prod_ids:
@@ -827,6 +823,7 @@ def import_prices_from_ozon_api_to_file(file_path: str):
             price_index = _price_info["price_indexes"]["price_index"]
 
             row = {
+                "id_on_platform": prod_id,
                 "price": price,
                 "old_price": old_price,
                 "ext_comp_min_price": ext_comp_min_price,
@@ -834,17 +831,9 @@ def import_prices_from_ozon_api_to_file(file_path: str):
                 "self_marketplaces_min_price": self_marketplaces_min_price,
                 "price_index": price_index,
             }
-            sku = products_skus[prod_id]
-            if isinstance(sku, dict):
-                for tr_scheme, sku_number in sku.items():
-                    new_row = copy.deepcopy(row)
-                    new_row["id_on_platform"] = sku_number
-                    prices_rows.append(new_row)
-                    print(f"Product {sku_number} prices were imported")
-            else:
-                row["id_on_platform"] = sku
-                prices_rows.append(row)
-                print(f"Product {sku} prices were imported")
+
+            prices_rows.append(row)
+            print(f"Product {prod_id} prices were imported")
 
         with open(file_path, "a", newline="") as csvfile:
             for prod in prices_rows:
@@ -1016,7 +1005,6 @@ def get_fbo_supply_order_products(supply_order_id: int, page=1):
 
 
 def import_fbo_supply_orders_from_ozon_api_to_file(file_path: str):
-    """Import postings for both trading schemes FBS and FBO into csv file to upload in ozon.posting model"""
     fieldnames = [
         "supply_order_id",
         "created_at",
@@ -1149,112 +1137,28 @@ def import_actions_from_ozon_api_to_file(file_path: str):
     with open(file_path, "a", newline="") as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         for idx, a in enumerate(actions):
-            candidates = []
-            participants = []
             action_id = a["id"]
             name = a["title"]
             is_participating = a["is_participating"]
             potential_products_count = a["potential_products_count"]
             participating_products_count = a["participating_products_count"]
-
             # Candidates
+            candidates = []
             offset = 0
             while offset < potential_products_count:
                 cands, total = get_action_candidates(action_id, offset=offset)
                 candidates.extend(cands)
                 offset += 1000
-
-            prod_ids = []
-            prod_id_max_action_price = {}
-            for can in candidates:
-                prod_ids.append(can["id"])
-                prod_id_max_action_price[can["id"]] = can["max_action_price"]
-
-            prod_ids_chunks = list(split_list_into_chunks_of_size_n(prod_ids, 1000))
-            total_product_info_list = []
-            for chunk in prod_ids_chunks:
-                product_info_chunk = get_product_info_list_by_product_id(
-                    product_id_list=chunk
-                )
-                total_product_info_list.extend(product_info_chunk)
-
-            action_candidates = []
-            for i in total_product_info_list:
-                item_id = i["id"]
-                sku = i["sku"]
-                price = prod_id_max_action_price[item_id]
-                if sku != 0:
-                    action_candidates.append(
-                        {"sku": sku, "product_id": item_id, "max_action_price": price}
-                    )
-                else:
-                    action_candidates.append(
-                        {
-                            "sku": i["fbs_sku"],
-                            "product_id": item_id,
-                            "max_action_price": price,
-                        }
-                    )
-                    action_candidates.append(
-                        {
-                            "sku": i["fbo_sku"],
-                            "product_id": item_id,
-                            "max_action_price": price,
-                        }
-                    )
-            action_candidates_str = json.dumps(action_candidates)
+            action_candidates_str = json.dumps(candidates)
             # Participants
-            action_participants = []
+            participants = []
             if is_participating:
                 offset = 0
                 while offset < participating_products_count:
                     parts, total = get_action_participants(action_id, offset=offset)
                     participants.extend(parts)
                     offset += 1000
-                prod_ids = []
-                prod_id_max_action_price = {}
-                for par in participants:
-                    prod_ids.append(par["id"])
-                    prod_id_max_action_price[par["id"]] = par["max_action_price"]
-
-                prod_ids_chunks = list(split_list_into_chunks_of_size_n(prod_ids, 1000))
-                total_product_info_list = []
-                for chunk in prod_ids_chunks:
-                    product_info_chunk = get_product_info_list_by_product_id(
-                        product_id_list=chunk
-                    )
-                    total_product_info_list.extend(product_info_chunk)
-
-                for i in total_product_info_list:
-                    item_id = i["id"]
-                    sku = i["sku"]
-                    price = prod_id_max_action_price[item_id]
-                    if sku != 0:
-                        action_participants.append(
-                            {
-                                "sku": sku,
-                                "product_id": item_id,
-                                "max_action_price": price,
-                            }
-                        )
-                    else:
-                        action_participants.append(
-                            {
-                                "sku": i["fbs_sku"],
-                                "product_id": item_id,
-                                "max_action_price": price,
-                            }
-                        )
-                        action_participants.append(
-                            {
-                                "sku": i["fbo_sku"],
-                                "product_id": item_id,
-                                "max_action_price": price,
-                            }
-                        )
-
-            action_participants_str = json.dumps(action_participants)
-
+            action_participants_str = json.dumps(participants)
             row = {
                 "action_id": action_id,
                 "name": name,
@@ -1276,3 +1180,32 @@ def import_actions_from_ozon_api_to_file(file_path: str):
             print(f"""{idx} - Action "{name}" was imported""")
 
     return "Successfully imported all actions!"
+
+
+def add_products_to_action(action_id, prod_list: list):
+    """prod_list:
+    [
+        {
+            "action_price": int,
+            "product_id": int
+        },
+        ...
+    ]
+    """
+    response = requests.post(
+        "https://api-seller.ozon.ru/v1/actions/products/activate",
+        headers=headers,
+        data=json.dumps({"action_id": action_id, "products": prod_list}),
+    ).json()
+
+    return response["result"]
+
+
+def delete_products_from_action(action_id, product_ids: list):
+    response = requests.post(
+        "https://api-seller.ozon.ru/v1/actions/products/deactivate",
+        headers=headers,
+        data=json.dumps({"action_id": action_id, "product_ids": product_ids}),
+    ).json()
+
+    return response["result"]
