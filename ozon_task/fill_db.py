@@ -2,6 +2,8 @@ import csv
 import base64
 import os
 
+from time import sleep
+
 import requests
 
 
@@ -58,6 +60,21 @@ def send_csv_file_to_ozon_import_file(url, session_id, file_path):
         response = requests.post(url, headers=headers, files=files)
         print(f"File {file_path} sent. Response: {response.text}")
         return response
+
+
+def send_all_csv_chunks_to_ozon_import_file(url, session_id):
+    for fpath in os.listdir():
+        if fpath.startswith("chunk"):
+            attempts = 0
+            while attempts < 3:
+                response = send_csv_file_to_ozon_import_file(
+                    url=url, session_id=session_id, file_path=fpath
+                )
+                if response.status_code == 200:
+                    break
+                else:
+                    sleep(5)
+                    attempts += 1
 
 
 def remove_all_chunk_csv_files():
