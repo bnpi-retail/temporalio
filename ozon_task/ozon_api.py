@@ -951,13 +951,17 @@ def import_postings_from_ozon_api_to_file(
             if status not in ["delivered", "cancelled"]:
                 continue
             skus = [i["sku"] for i in posting["products"]]
-            region = posting["analytics_data"]["region"]
-            city = posting["analytics_data"]["city"]
-            warehouse_id = posting["analytics_data"]["warehouse_id"]
-            if trading_scheme == "FBS":
-                warehouse_name = posting["analytics_data"]["warehouse"]
+            if analytics_data := posting.get("analytics_data"):
+                region = analytics_data["region"]
+                city = analytics_data["city"]
+                warehouse_id = analytics_data["warehouse_id"]
+                if trading_scheme == "FBS":
+                    warehouse_name = posting["analytics_data"]["warehouse"]
+                else:
+                    warehouse_name = posting["analytics_data"]["warehouse_name"]
             else:
-                warehouse_name = posting["analytics_data"]["warehouse_name"]
+                region, city, warehouse_id, warehouse_name = "", "", "", ""
+
             cluster_from = posting["financial_data"]["cluster_from"]
             cluster_to = posting["financial_data"]["cluster_to"]
             row = {
