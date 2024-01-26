@@ -532,6 +532,10 @@ def convert_datetime_str_to_ozon_date(datetime_str: str):
     return datetime_str.replace(" ", "T") + "Z"
 
 
+def convert_datetime_str_to_ozon_date_ver2(datetime_str: str):
+    return datetime_str.replace(" ", "T").replace("+00:00", "") + "Z"
+
+
 def convert_ozon_datetime_str_to_odoo_datetime_str(ozon_datetime_str: str):
     return ozon_datetime_str.replace("T", " ").replace("Z", "")
 
@@ -920,7 +924,8 @@ def import_postings_from_ozon_api_to_file(
         "cluster_from",
         "cluster_to",
     ]
-    write_headers_to_csv(file_path, fieldnames)
+    if not os.path.isfile(file_path):
+        write_headers_to_csv(file_path, fieldnames)
     limit = 1000
     offset = 0
     while True:
