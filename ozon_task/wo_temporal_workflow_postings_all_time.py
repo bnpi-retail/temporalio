@@ -17,10 +17,10 @@ PASSWORD = os.getenv("PASSWORD")
 POSTINGS_PATH = "./postings.csv"
 
 
-string_date_from = "2024-01-01T00:00:00Z"
-string_date_to = "2024-01-25T00:00:00Z"
-date_from = datetime.fromisoformat(string_date_from)
-date_to = datetime.fromisoformat(string_date_to)
+string_date_from = "2020-01-01T00:00:00Z"
+string_date_to = "2020-01-28T00:00:00Z"
+date_from = datetime(2020, 1, 1, 00, 00, 00, 000000, tzinfo=timezone.utc)
+date_to = datetime(2020, 1, 28, 00, 00, 00, 000000, tzinfo=timezone.utc)
 today = datetime.now(tz=timezone.utc)
 while date_to < today:
     print(f"Postings from {string_date_from} ---------- to {string_date_to}")
