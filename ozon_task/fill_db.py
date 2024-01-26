@@ -66,7 +66,7 @@ def send_all_csv_chunks_to_ozon_import_file(url, session_id):
     for fpath in os.listdir():
         if fpath.startswith("chunk"):
             attempts = 0
-            while attempts < 3:
+            while attempts < 10:
                 response = send_csv_file_to_ozon_import_file(
                     url=url, session_id=session_id, file_path=fpath
                 )
