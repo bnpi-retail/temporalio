@@ -8,7 +8,7 @@ from ozon_api import (
 from fill_db import (
     authenticate_to_odoo,
     divide_csv_into_chunks,
-    send_csv_file_to_ozon_import_file,
+    send_all_csv_chunks_to_ozon_import_file,
     remove_all_csv_files,
 )
 
@@ -38,11 +38,5 @@ while date_to < today:
 session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
 divide_csv_into_chunks(POSTINGS_PATH)
 url = "http://0.0.0.0:8070/import/postings_from_ozon_api_to_file"
-
-for fpath in os.listdir():
-    if fpath.startswith("chunk"):
-        send_csv_file_to_ozon_import_file(
-            url=url, session_id=session_id, file_path=fpath
-        )
-
+send_all_csv_chunks_to_ozon_import_file(url=url, session_id=session_id)
 remove_all_csv_files()
