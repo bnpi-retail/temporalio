@@ -51,10 +51,10 @@ for fpath in os.listdir():
             response = send_csv_file_to_ozon_import_file(
                 url=url, session_id=session_id, file_path=fpath
             )
-        if response.status_code == 200:
-            break
-        else:
-            sleep(5)
-            attempts += 1
+            if response.status_code == 200:
+                break
+            else:
+                sleep(5)
+                attempts += 1
 
 remove_all_csv_files()
