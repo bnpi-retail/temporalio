@@ -568,7 +568,9 @@ def import_products_from_ozon_api_to_file(file_path: str):
         "fbo_sku",
         "fbs_sku",
         "categories",
+        "description_category_id",
         "full_categories",
+        "full_categories_id",
         "name",
         "description",
         "keywords",
@@ -610,11 +612,12 @@ def import_products_from_ozon_api_to_file(file_path: str):
                     category_name = a["values"][0]["value"]
                 if a["attribute_id"] == 22387:
                     parent_category = a["values"][0]["value"]
+                    full_categories_id = a["values"][0]["dictionary_value_id"]
                 if a["attribute_id"] == 4191:
                     description = a["values"][0]["value"]
                 if a["attribute_id"] == 22336:
                     keywords = a["values"][0]["value"]
-
+            description_category_id = prod["description_category_id"]
             offer_id = prod["offer_id"]
             name = prod["name"]
             dimensions = calculate_product_dimensions(prod)
@@ -646,7 +649,9 @@ def import_products_from_ozon_api_to_file(file_path: str):
                 "fbo_sku": fbo_sku,
                 "fbs_sku": fbs_sku,
                 "categories": category_name,
+                "description_category_id": description_category_id,
                 "full_categories": parent_category,
+                "full_categories_id": full_categories_id,
                 "name": name,
                 "description": description,
                 "keywords": keywords,
