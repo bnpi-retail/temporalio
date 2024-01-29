@@ -12,12 +12,15 @@ from temporalio.worker import Worker
 
 with workflow.unsafe.imports_passed_through():
     from price_histry_competitors import main as price_histry_competitors_main
-    from price_histry_competitors import activity_two as price_histry_competitors_activity_two
+    from price_histry_competitors import (
+        activity_two as price_histry_competitors_activity_two,
+    )
 
 
 @activity.defn
 async def mp_parsing_api_activity() -> NoReturn:
     price_histry_competitors_main()
+
 
 @activity.defn
 async def save_in_odoo_activity() -> NoReturn:
@@ -48,10 +51,7 @@ async def main():
         client,
         task_queue="MP-stats-task-queue",
         workflows=[MPStatsWorkflow],
-        activities=[
-            mp_parsing_api_activity, 
-            save_in_odoo_activity
-        ],
+        activities=[mp_parsing_api_activity, save_in_odoo_activity],
     ):
         pass
 
