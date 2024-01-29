@@ -1,4 +1,3 @@
-import copy
 import csv
 import json
 from itertools import groupby
@@ -6,14 +5,20 @@ from operator import itemgetter
 import os
 from time import sleep
 import requests
-from requests.exceptions import JSONDecodeError
 
 from dotenv import load_dotenv
 
-load_dotenv()
+from fill_db import authenticate_to_odoo, get_settings_credentials
 
+load_dotenv()
+USERNAME = os.getenv("USERNAME")
+PASSWORD = os.getenv("PASSWORD")
 OZON_CLIENT_ID = os.getenv("OZON_CLIENT_ID")
-OZON_API_KEY = os.getenv("OZON_API_KEY")
+
+session_id = authenticate_to_odoo(USERNAME, PASSWORD)
+settings = get_settings_credentials(session_id)
+OZON_API_KEY = settings.get("OZON_API_KEY")
+
 
 if not OZON_CLIENT_ID or not OZON_API_KEY:
     raise ValueError("Env variables $OZON_CLIENT_ID and $OZON_API_KEY weren't found")

@@ -33,6 +33,16 @@ def authenticate_to_odoo(username: str, password: str):
         return None
 
 
+def get_settings_credentials(session_id):
+    url = "http://0.0.0.0:8070/get_settings_credentials"
+    headers = {"Cookie": f"session_id={session_id}"}
+    response = requests.post(url, headers=headers)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        return {"status_code": response.status_code, "response_text": response.text}
+
+
 def divide_csv_into_chunks(file_path):
     with open(file_path, "r", encoding="utf-8") as csvfile:
         reader = csv.DictReader(csvfile)
