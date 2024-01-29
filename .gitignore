@@ -4,3 +4,5 @@ secrets.py
 .env
 *.csv
 *.log
+.DS_Store
+data.txt
