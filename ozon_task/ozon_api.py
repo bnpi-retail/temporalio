@@ -363,6 +363,7 @@ def import_comissions_by_categories_from_ozon_api_to_file(file_path: str):
     fieldnames = [
         "commission_name",
         "category_name",
+        "description_category_id",
         "trading_scheme",
         "value",
         "commission_type",
@@ -379,16 +380,17 @@ def import_comissions_by_categories_from_ozon_api_to_file(file_path: str):
         products_attrs = get_product_attributes(prod_ids, limit=limit)
         commissions_rows = []
         for prod in products_attrs:
+            description_category_id = prod["description_category_id"]
+            if structure.get(description_category_id):
+                continue
+            else:
+                structure[description_category_id] = True
+
             product_id = prod["id"]
             attrs = prod["attributes"]
             for a in attrs:
                 if a["attribute_id"] == 9461:
                     category_name = a["values"][0]["value"]
-
-            if structure.get(category_name):
-                continue
-            else:
-                structure[category_name] = True
 
             prod_info = get_product_info(product_id)
 
@@ -406,6 +408,7 @@ def import_comissions_by_categories_from_ozon_api_to_file(file_path: str):
 
                 row = {
                     "category_name": category_name,
+                    "description_category_id": description_category_id,
                     "commission_name": com_name,
                     "trading_scheme": trad_scheme,
                     "value": percent,
