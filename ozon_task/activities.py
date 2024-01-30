@@ -167,6 +167,15 @@ async def activity_compute_products_percent_expenses():
 
 
 @activity.defn
+async def activity_compute_products_all_expenses():
+    session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
+    url = "http://0.0.0.0:8070/compute/products_all_expenses"
+    headers = {"Cookie": f"session_id={session_id}"}
+    response = requests.post(url, headers=headers)
+    print(response.text)
+
+
+@activity.defn
 async def activity_create_daily_tasks():
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
     url = "http://0.0.0.0:8070/tasks/create_daily_tasks"
