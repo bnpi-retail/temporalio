@@ -64,7 +64,7 @@ class InfoOdoo:
 
             files = {"file": encoded_data}
             response = requests.post(url, headers=headers, files=files)
-            os.remove(file_path)
+            # os.remove(file_path)
 
             if response.status_code == 200:
                 print(f"File sent. Response: {response.text}")
