@@ -62,11 +62,9 @@ class GetProductsFromOzon(InfoOzon, ProcessFileCSV):
 
         all_file_paths = []
 
-        n = 0
         first = True
-        while (len(products) == limit or first == True) and n < 3:
+        while len(products) == limit or first == True:
             first = False
-            n += 1
 
             products, last_id = self.get_product(limit=limit, last_id=last_id)
             prod_ids = self.get_product_id(products)
