@@ -1,11 +1,12 @@
-import subprocess
-import os
-import requests
-
-from typing import NoReturn
 from datetime import datetime, time, timedelta
+import os
+import subprocess
+from typing import NoReturn
+
 from dotenv import load_dotenv
 from temporalio import activity
+import requests
+
 from ozon_api import (
     import_products_from_ozon_api_to_file,
     import_transactions_from_ozon_api_to_file,

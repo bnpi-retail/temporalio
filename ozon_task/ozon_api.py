@@ -940,18 +940,22 @@ def import_postings_from_ozon_api_to_file(
     if not os.path.isfile(file_path):
         write_headers_to_csv(file_path, fieldnames)
     limit = 1000
-    offset = 0
+    offset_fbo = 0
+    offset_fbs = 0
     while True:
         postings_fbo = get_postings_fbo(
-            date_from=date_from, date_to=date_to, limit=limit, offset=offset
+            date_from=date_from, date_to=date_to, limit=limit, offset=offset_fbo
         )
         postings_fbs = get_postings_fbs(
-            date_from=date_from, date_to=date_to, limit=limit, offset=offset
+            date_from=date_from, date_to=date_to, limit=limit, offset=offset_fbs
         )
 
         if len(postings_fbo) == 0 and len(postings_fbs) == 0:
             break
-        offset += 1000
+        if len(postings_fbo) != 0:
+            offset_fbo += 1000
+        if len(postings_fbs) != 0:
+            offset_fbs += 1000
 
         postings_rows = []
         for posting in postings_fbo + postings_fbs:
