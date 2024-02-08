@@ -1,12 +1,11 @@
-from datetime import datetime, time, timedelta
-import os
 import subprocess
-from typing import NoReturn
-
-from dotenv import load_dotenv
-from temporalio import activity
+import os
 import requests
 
+from typing import NoReturn
+from datetime import datetime, time, timedelta
+from dotenv import load_dotenv
+from temporalio import activity
 from ozon_api import (
     import_products_from_ozon_api_to_file,
     import_transactions_from_ozon_api_to_file,
@@ -164,6 +163,15 @@ async def activity_compute_products_percent_expenses():
         ["curl", "-X", "POST", "-H", f"Cookie: session_id={session_id}", url, "&"]
     )
     print("Products percent expenses computation launched.")
+
+
+@activity.defn
+async def activity_compute_products_all_expenses():
+    session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
+    url = "http://0.0.0.0:8070/compute/products_all_expenses"
+    headers = {"Cookie": f"session_id={session_id}"}
+    response = requests.post(url, headers=headers)
+    print(response.text)
 
 
 @activity.defn

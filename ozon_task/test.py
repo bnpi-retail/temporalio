@@ -1,30 +1,44 @@
-import requests
-from datetime import datetime, timedelta
+import aiohttp
+
+from temporalio import activity
 
 
-def get_days() -> tuple:
-    today_date = datetime.now()
-    yesterday_date = today_date - timedelta(days=1)
+headers = {
+    "Client-Id": "16713",
+    "Api-Key": "de602215-8e7c-4b9f-aea4-0b4a3c333db9",
+}
 
-    today_date_str = today_date.strftime('%Y-%m-%d')
-    yesterday_date_str = yesterday_date.strftime('%Y-%m-%d')
-    return today_date_str, yesterday_date_str
 
-def get_request_mpstats(sku: int) -> requests.Response:
-    url = f'https://mpstats.io/api/oz/get/item/{sku}/sales'
+async def get_product(last_id, limit=1000) -> dict:
+    url = "https://api-seller.ozon.ru/v2/product/list"
+    payload = {"filter": {}, "last_id": last_id, "limit": limit}
 
-    headers = {
-        'X-Mpstats-TOKEN': '658191888c92d3.6926326394b21a4a75d6efac2ba3ba09bde8db4a',
-        'Content-Type': 'application/json',
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, headers=headers, json=payload) as response:
+            data = await response.json()
+            result = data.get("result")
+            if result is None:
+                raise ValueError(data)
+            return result["items"], result["last_id"]
+
+
+@activity.defn
+async def get_items() -> dict:
+    data = {
+        "last_id": None,
+        "items": [],
     }
-    today, yesterday = get_days()
-    params = {
-        'd1':today,
-        'd2': yesterday,
-    }
-    response = requests.get(url, headers=headers, params=params)
-    return response.json()
 
-sku = '178146273'
-res = get_request_mpstats(sku)
-print(res)
+    last_id = ""
+    for _ in range(3):
+        items, last_id = await get_product(last_id=last_id)
+
+        data["last_id"] = last_id
+        data["items"].append(items)
+
+    return data
+
+
+@activity.defn
+async def send_to_odoo(item):
+    print("send")

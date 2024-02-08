@@ -1,4 +1,3 @@
-import copy
 import csv
 import json
 from itertools import groupby
@@ -6,14 +5,20 @@ from operator import itemgetter
 import os
 from time import sleep
 import requests
-from requests.exceptions import JSONDecodeError
 
 from dotenv import load_dotenv
 
-load_dotenv()
+from fill_db import authenticate_to_odoo, get_settings_credentials
 
+load_dotenv()
+USERNAME = os.getenv("USERNAME")
+PASSWORD = os.getenv("PASSWORD")
 OZON_CLIENT_ID = os.getenv("OZON_CLIENT_ID")
-OZON_API_KEY = os.getenv("OZON_API_KEY")
+
+session_id = authenticate_to_odoo(USERNAME, PASSWORD)
+settings = get_settings_credentials(session_id)
+OZON_API_KEY = settings.get("OZON_API_KEY")
+
 
 if not OZON_CLIENT_ID or not OZON_API_KEY:
     raise ValueError("Env variables $OZON_CLIENT_ID and $OZON_API_KEY weren't found")
@@ -363,6 +368,7 @@ def import_comissions_by_categories_from_ozon_api_to_file(file_path: str):
     fieldnames = [
         "commission_name",
         "category_name",
+        "description_category_id",
         "trading_scheme",
         "value",
         "commission_type",
@@ -379,16 +385,17 @@ def import_comissions_by_categories_from_ozon_api_to_file(file_path: str):
         products_attrs = get_product_attributes(prod_ids, limit=limit)
         commissions_rows = []
         for prod in products_attrs:
+            description_category_id = prod["description_category_id"]
+            if structure.get(description_category_id):
+                continue
+            else:
+                structure[description_category_id] = True
+
             product_id = prod["id"]
             attrs = prod["attributes"]
             for a in attrs:
                 if a["attribute_id"] == 9461:
                     category_name = a["values"][0]["value"]
-
-            if structure.get(category_name):
-                continue
-            else:
-                structure[category_name] = True
 
             prod_info = get_product_info(product_id)
 
@@ -406,6 +413,7 @@ def import_comissions_by_categories_from_ozon_api_to_file(file_path: str):
 
                 row = {
                     "category_name": category_name,
+                    "description_category_id": description_category_id,
                     "commission_name": com_name,
                     "trading_scheme": trad_scheme,
                     "value": percent,
@@ -532,6 +540,10 @@ def convert_datetime_str_to_ozon_date(datetime_str: str):
     return datetime_str.replace(" ", "T") + "Z"
 
 
+def convert_datetime_str_to_ozon_date_ver2(datetime_str: str):
+    return datetime_str.replace(" ", "T").replace("+00:00", "") + "Z"
+
+
 def convert_ozon_datetime_str_to_odoo_datetime_str(ozon_datetime_str: str):
     return ozon_datetime_str.replace("T", " ").replace("Z", "")
 
@@ -564,7 +576,9 @@ def import_products_from_ozon_api_to_file(file_path: str):
         "fbo_sku",
         "fbs_sku",
         "categories",
+        "description_category_id",
         "full_categories",
+        "full_categories_id",
         "name",
         "description",
         "keywords",
@@ -606,11 +620,12 @@ def import_products_from_ozon_api_to_file(file_path: str):
                     category_name = a["values"][0]["value"]
                 if a["attribute_id"] == 22387:
                     parent_category = a["values"][0]["value"]
+                    full_categories_id = a["values"][0]["dictionary_value_id"]
                 if a["attribute_id"] == 4191:
                     description = a["values"][0]["value"]
                 if a["attribute_id"] == 22336:
                     keywords = a["values"][0]["value"]
-
+            description_category_id = prod["description_category_id"]
             offer_id = prod["offer_id"]
             name = prod["name"]
             dimensions = calculate_product_dimensions(prod)
@@ -642,7 +657,9 @@ def import_products_from_ozon_api_to_file(file_path: str):
                 "fbo_sku": fbo_sku,
                 "fbs_sku": fbs_sku,
                 "categories": category_name,
+                "description_category_id": description_category_id,
                 "full_categories": parent_category,
+                "full_categories_id": full_categories_id,
                 "name": name,
                 "description": description,
                 "keywords": keywords,
@@ -920,7 +937,8 @@ def import_postings_from_ozon_api_to_file(
         "cluster_from",
         "cluster_to",
     ]
-    write_headers_to_csv(file_path, fieldnames)
+    if not os.path.isfile(file_path):
+        write_headers_to_csv(file_path, fieldnames)
     limit = 1000
     offset = 0
     while True:
@@ -946,13 +964,17 @@ def import_postings_from_ozon_api_to_file(
             if status not in ["delivered", "cancelled"]:
                 continue
             skus = [i["sku"] for i in posting["products"]]
-            region = posting["analytics_data"]["region"]
-            city = posting["analytics_data"]["city"]
-            warehouse_id = posting["analytics_data"]["warehouse_id"]
-            if trading_scheme == "FBS":
-                warehouse_name = posting["analytics_data"]["warehouse"]
+            if analytics_data := posting.get("analytics_data"):
+                region = analytics_data["region"]
+                city = analytics_data["city"]
+                warehouse_id = analytics_data["warehouse_id"]
+                if trading_scheme == "FBS":
+                    warehouse_name = posting["analytics_data"]["warehouse"]
+                else:
+                    warehouse_name = posting["analytics_data"]["warehouse_name"]
             else:
-                warehouse_name = posting["analytics_data"]["warehouse_name"]
+                region, city, warehouse_id, warehouse_name = "", "", "", ""
+
             cluster_from = posting["financial_data"]["cluster_from"]
             cluster_to = posting["financial_data"]["cluster_to"]
             row = {

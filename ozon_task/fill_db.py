@@ -2,6 +2,8 @@ import csv
 import base64
 import os
 
+from time import sleep
+
 import requests
 
 
@@ -31,6 +33,16 @@ def authenticate_to_odoo(username: str, password: str):
         return None
 
 
+def get_settings_credentials(session_id):
+    url = "http://0.0.0.0:8070/get_settings_credentials"
+    headers = {"Cookie": f"session_id={session_id}"}
+    response = requests.post(url, headers=headers)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        return {"status_code": response.status_code, "response_text": response.text}
+
+
 def divide_csv_into_chunks(file_path):
     with open(file_path, "r", encoding="utf-8") as csvfile:
         reader = csv.DictReader(csvfile)
@@ -57,7 +69,22 @@ def send_csv_file_to_ozon_import_file(url, session_id, file_path):
         files = {"file": encoded_data}
         response = requests.post(url, headers=headers, files=files)
         print(f"File {file_path} sent. Response: {response.text}")
-        return "File sent successfully"
+        return response
+
+
+def send_all_csv_chunks_to_ozon_import_file(url, session_id):
+    for fpath in os.listdir():
+        if fpath.startswith("chunk"):
+            attempts = 0
+            while attempts < 10:
+                response = send_csv_file_to_ozon_import_file(
+                    url=url, session_id=session_id, file_path=fpath
+                )
+                if response.status_code == 200:
+                    break
+                else:
+                    sleep(5)
+                    attempts += 1
 
 
 def remove_all_chunk_csv_files():
