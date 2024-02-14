@@ -88,6 +88,7 @@ class OzonAnalysisData(AuthOdoo):
             except KeyError as e:
                 print(f'Error: status {self.offset}')
                 continue
+            print(self.offset)
 
             data = self.treatment(data)
             self.send_to_odoo(data, yesterday)
