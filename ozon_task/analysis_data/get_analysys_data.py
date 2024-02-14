@@ -88,7 +88,7 @@ class OzonAnalysisData(AuthOdoo):
             try:
                 data = self.requests_ozon(yesterday)
             except KeyError as e:
-                print(f'Error: status {self.offset} {traceback.format_exc()}')
+                print(f'Error: status {self.offset}')
                 continue
             print(self.offset)
 
