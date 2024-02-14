@@ -1,5 +1,7 @@
 import datetime
 import json
+import traceback
+
 import requests
 
 from os import getenv
@@ -86,7 +88,7 @@ class OzonAnalysisData(AuthOdoo):
             try:
                 data = self.requests_ozon(yesterday)
             except KeyError as e:
-                print(f'Error: status {self.offset}')
+                print(f'Error: status {self.offset} {traceback.format_exc()}')
                 continue
             print(self.offset)
 
