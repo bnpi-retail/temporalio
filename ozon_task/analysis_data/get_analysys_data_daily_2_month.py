@@ -28,7 +28,7 @@ class OzonAnalysisData(AuthOdoo):
     @staticmethod
     def get_days() -> tuple:
         date_to = datetime.date.today() - timedelta(days=1)
-        date_from = date_to - timedelta(days=65)
+        date_from = date_to - timedelta(days=75)
         return date_from, date_to
 
     def requests_ozon(self, date_from, date_to) -> dict:
