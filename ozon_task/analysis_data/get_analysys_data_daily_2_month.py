@@ -26,23 +26,25 @@ class OzonAnalysisData(AuthOdoo):
         self.skus = set()
 
     @staticmethod
-    def get_days() -> datetime.date:
-        yesterday = datetime.date.today() - timedelta(days=1)
-        return yesterday
+    def get_days() -> tuple:
+        date_to = datetime.date.today() - timedelta(days=1)
+        date_from = date_to - timedelta(days=65)
+        return date_from, date_to
 
-    def requests_ozon(self, date) -> dict:
+    def requests_ozon(self, date_from, date_to) -> dict:
         result = requests.post(
             "https://api-seller.ozon.ru/v1/analytics/data",
             headers=self.headers_ozon,
             data=json.dumps({
-                "date_from": date.isoformat(),
-                "date_to": date.isoformat(),
+                "date_from": date_from.isoformat(),
+                "date_to": date_to.isoformat(),
                 "metrics": [
                     "hits_view",
                     "hits_tocart",
                 ],
                 "dimension": [
                     "sku",
+                    "day",
                 ],
                 "limit": 1000,
                 "offset": self.offset
@@ -51,58 +53,52 @@ class OzonAnalysisData(AuthOdoo):
         self.offset += 1000
         return result
 
-    def treatment(self, data: list) -> dict:
+    def treatment(self, data: dict) -> dict:
         products = {}
 
         for product in data:
             sku = product['dimensions'][0]['id']
+            date = product['dimensions'][1]['id']
             hits_view = product['metrics'][0]
             hits_tocart = product['metrics'][1]
 
-            if sku not in self.skus:
-                self.skus.add(sku)
-            else:
-                continue
+            # if sku not in self.skus:
+            #     self.skus.add(sku)
+            # else:
+            #     continue
 
-            products[sku] = {
+            products[(sku, date)] = {
                 'hits_view': hits_view,
-                'hits_tocart': hits_tocart
+                'hits_tocart': hits_tocart,
             }
 
         return products
 
-    def send_to_odoo(self, data: dict, date) -> None:
+    def send_to_odoo(self, data: dict) -> None:
         path = "api/v1/save-analysys-data-lots"
         endpoint = f"{self.url}{path}"
         headers = self.connect_to_odoo_api_with_auth()
-        data = {'data': str(data), 'date': date}
+        data = {'data': str(data)}
         response = requests.post(endpoint, headers=headers, data=data)
 
         if response.status_code != 200:
             raise requests.exceptions.RequestException()
 
     def main(self) -> None:
-        yesterday = self.get_days()
-        period = []
-        for i in range(1, 15):
-            day = datetime.date.today() - timedelta(days=i)
-            period.append(day)
+        date_from, date_to = self.get_days()
 
-        for day in period:
-            while True:
-                try:
-                    data = self.requests_ozon(day)
-                except KeyError as e:
-                    print(f'Error: status {self.offset}')
-                    continue
-                print(self.offset)
+        while True:
+            try:
+                data = self.requests_ozon(date_from, date_to)
+            except KeyError as e:
+                print(f'Error: status {self.offset}')
+                continue
+            print(self.offset)
+            data = self.treatment(data)
+            self.send_to_odoo(data)
 
-                data = self.treatment(data)
-                self.send_to_odoo(data, day)
+            if len(data) != 1000:
+                break
 
-                if self.offset == 4000 or len(data) != 1000:
-                    self.offset = 0
-                    break
-
-                sleep(30)
+            sleep(30)
 

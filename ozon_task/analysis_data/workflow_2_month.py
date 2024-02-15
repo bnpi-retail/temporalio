@@ -9,7 +9,7 @@ from temporalio.common import RetryPolicy
 from temporalio.worker import Worker
 
 with workflow.unsafe.imports_passed_through():
-    from get_analysys_data_per_day_last_2_week import OzonAnalysisData
+    from get_analysys_data_daily_2_month import OzonAnalysisData
 
 
 @activity.defn
