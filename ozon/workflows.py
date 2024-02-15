@@ -125,6 +125,29 @@ class OzonTransactionsPrevMonthWorkflow:
 
 
 @workflow.defn
+class OzonTransactionsPrevTwoYearWorkflow:
+    @workflow.run
+    async def run(self) -> None:
+        await workflow.execute_activity(
+            activity_import_transactions_from_prev_2_years,
+            start_to_close_timeout=timedelta(seconds=20000),
+            retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
+        )
+
+        await workflow.execute_activity(
+            activity_write_transactions_to_odoo,
+            start_to_close_timeout=timedelta(seconds=20000),
+            retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
+        )
+
+        await workflow.execute_activity(
+            activity_remove_csv_files,
+            start_to_close_timeout=timedelta(seconds=20000),
+            retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
+        )
+
+
+@workflow.defn
 class OzonStocksWorkflow:
     @workflow.run
     async def run(self) -> None:
