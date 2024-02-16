@@ -1,7 +1,6 @@
 import asyncio
-
+import tools
 from datetime import timedelta
-from typing import NoReturn
 
 from temporalio import activity, workflow
 from temporalio.client import Client
@@ -13,8 +12,9 @@ with workflow.unsafe.imports_passed_through():
 
 
 @activity.defn
-async def ozon_analysis_data_activity() -> NoReturn:
-    OzonAnalysisData().main()
+@tools.odoo_log({'name': 'ozon_analysis_data_activity'})
+async def ozon_analysis_data_activity():
+    return OzonAnalysisData().main()
 
 
 @workflow.defn

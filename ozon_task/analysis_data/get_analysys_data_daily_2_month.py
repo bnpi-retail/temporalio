@@ -1,7 +1,5 @@
 import datetime
 import json
-import traceback
-
 import requests
 
 from os import getenv
@@ -84,9 +82,9 @@ class OzonAnalysisData(AuthOdoo):
         if response.status_code != 200:
             raise requests.exceptions.RequestException()
 
-    def main(self) -> None:
+    def main(self):
         date_from, date_to = self.get_days()
-
+        log_data = {"date": "30.04.1990"}
         while True:
             try:
                 data = self.requests_ozon(date_from, date_to)
@@ -94,6 +92,8 @@ class OzonAnalysisData(AuthOdoo):
                 print(f'Error: status {self.offset}')
                 continue
             print(self.offset)
+
+            break
             data = self.treatment(data)
             self.send_to_odoo(data)
 
@@ -101,4 +101,7 @@ class OzonAnalysisData(AuthOdoo):
                 break
 
             sleep(30)
+
+        return log_data
+
 
