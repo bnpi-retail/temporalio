@@ -36,21 +36,24 @@ with workflow.unsafe.imports_passed_through():
 class OzonProductsWorkflow:
     @workflow.run
     async def run(self) -> None:
+
+        start_to_close_timeout = 1
+
         await workflow.execute_activity(
             activity_import_products,
-            start_to_close_timeout=timedelta(seconds=20000),
-            retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
+            start_to_close_timeout=timedelta(days=start_to_close_timeout),
+            retry_policy=RetryPolicy(maximum_interval=timedelta(days=24)),
         )
 
         await workflow.execute_activity(
             activity_write_products_to_odoo,
-            start_to_close_timeout=timedelta(seconds=20000),
-            retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
+            start_to_close_timeout=timedelta(days=start_to_close_timeout),
+            retry_policy=RetryPolicy(maximum_interval=timedelta(days=24)),
         )
 
         await workflow.execute_activity(
             activity_remove_csv_files,
-            start_to_close_timeout=timedelta(seconds=20000),
+            start_to_close_timeout=timedelta(days=start_to_close_timeout),
             retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
         )
 
@@ -59,21 +62,24 @@ class OzonProductsWorkflow:
 class OzonFboSupplyOrdersWorkflow:
     @workflow.run
     async def run(self) -> None:
+
+        start_to_close_timeout = 1
+
         await workflow.execute_activity(
             activity_import_fbo_supply_orders,
-            start_to_close_timeout=timedelta(seconds=20000),
-            retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
+            start_to_close_timeout=timedelta(days=start_to_close_timeout),
+            retry_policy=RetryPolicy(maximum_interval=timedelta(days=24)),
         )
 
         await workflow.execute_activity(
             activity_write_fbo_supply_orders_to_odoo,
-            start_to_close_timeout=timedelta(seconds=20000),
-            retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
+            start_to_close_timeout=timedelta(days=start_to_close_timeout),
+            retry_policy=RetryPolicy(maximum_interval=timedelta(days=24)),
         )
 
         await workflow.execute_activity(
             activity_remove_csv_files,
-            start_to_close_timeout=timedelta(seconds=20000),
+            start_to_close_timeout=timedelta(days=start_to_close_timeout),
             retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
         )
 
@@ -82,21 +88,24 @@ class OzonFboSupplyOrdersWorkflow:
 class OzonTransactionsWorkflow:
     @workflow.run
     async def run(self) -> None:
+
+        start_to_close_timeout = 1
+
         await workflow.execute_activity(
             activity_import_transactions,
-            start_to_close_timeout=timedelta(seconds=20000),
+            start_to_close_timeout=timedelta(days=start_to_close_timeout),
             retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
         )
 
         await workflow.execute_activity(
             activity_write_transactions_to_odoo,
-            start_to_close_timeout=timedelta(seconds=20000),
+            start_to_close_timeout=timedelta(days=start_to_close_timeout),
             retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
         )
 
         await workflow.execute_activity(
             activity_remove_csv_files,
-            start_to_close_timeout=timedelta(seconds=20000),
+            start_to_close_timeout=timedelta(days=start_to_close_timeout),
             retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
         )
 
@@ -105,21 +114,24 @@ class OzonTransactionsWorkflow:
 class OzonTransactionsPrevMonthWorkflow:
     @workflow.run
     async def run(self) -> None:
+
+        start_to_close_timeout = 1
+        
         await workflow.execute_activity(
             activity_import_transactions_from_prev_month,
-            start_to_close_timeout=timedelta(seconds=20000),
+            start_to_close_timeout=timedelta(days=start_to_close_timeout),
             retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
         )
 
         await workflow.execute_activity(
             activity_write_transactions_to_odoo,
-            start_to_close_timeout=timedelta(seconds=20000),
+            start_to_close_timeout=timedelta(days=start_to_close_timeout),
             retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
         )
 
         await workflow.execute_activity(
             activity_remove_csv_files,
-            start_to_close_timeout=timedelta(seconds=20000),
+            start_to_close_timeout=timedelta(days=start_to_close_timeout),
             retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
         )
 
@@ -128,21 +140,24 @@ class OzonTransactionsPrevMonthWorkflow:
 class OzonTransactionsPrevTwoYearWorkflow:
     @workflow.run
     async def run(self) -> None:
+
+        start_to_close_timeout = 1
+
         await workflow.execute_activity(
             activity_import_transactions_from_prev_2_years,
-            start_to_close_timeout=timedelta(seconds=20000),
+            start_to_close_timeout=timedelta(days=start_to_close_timeout),
             retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
         )
 
         await workflow.execute_activity(
             activity_write_transactions_to_odoo,
-            start_to_close_timeout=timedelta(seconds=20000),
+            start_to_close_timeout=timedelta(days=start_to_close_timeout),
             retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
         )
 
         await workflow.execute_activity(
             activity_remove_csv_files,
-            start_to_close_timeout=timedelta(seconds=20000),
+            start_to_close_timeout=timedelta(days=start_to_close_timeout),
             retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
         )
 
@@ -151,21 +166,24 @@ class OzonTransactionsPrevTwoYearWorkflow:
 class OzonStocksWorkflow:
     @workflow.run
     async def run(self) -> None:
+
+        start_to_close_timeout = 1
+
         await workflow.execute_activity(
             activity_import_stocks,
-            start_to_close_timeout=timedelta(seconds=20000),
+            start_to_close_timeout=timedelta(days=start_to_close_timeout),
             retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
         )
 
         await workflow.execute_activity(
             activity_write_stocks_to_odoo,
-            start_to_close_timeout=timedelta(seconds=20000),
+            start_to_close_timeout=timedelta(days=start_to_close_timeout),
             retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
         )
 
         await workflow.execute_activity(
             activity_remove_csv_files,
-            start_to_close_timeout=timedelta(seconds=20000),
+            start_to_close_timeout=timedelta(days=start_to_close_timeout),
             retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
         )
 
@@ -174,21 +192,24 @@ class OzonStocksWorkflow:
 class OzonPostingsWorkflow:
     @workflow.run
     async def run(self) -> None:
+
+        start_to_close_timeout = 1
+
         await workflow.execute_activity(
             activity_import_postings,
-            start_to_close_timeout=timedelta(seconds=20000),
+            start_to_close_timeout=timedelta(days=start_to_close_timeout),
             retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
         )
 
         await workflow.execute_activity(
             activity_write_postings_to_odoo,
-            start_to_close_timeout=timedelta(seconds=20000),
+            start_to_close_timeout=timedelta(days=start_to_close_timeout),
             retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
         )
 
         await workflow.execute_activity(
             activity_remove_csv_files,
-            start_to_close_timeout=timedelta(seconds=20000),
+            start_to_close_timeout=timedelta(days=start_to_close_timeout),
             retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
         )
 
@@ -197,21 +218,24 @@ class OzonPostingsWorkflow:
 class OzonActionsWorkflow:
     @workflow.run
     async def run(self) -> None:
+
+        start_to_close_timeout = 1
+
         await workflow.execute_activity(
             activity_import_ozon_actions,
-            start_to_close_timeout=timedelta(seconds=20000),
+            start_to_close_timeout=timedelta(days=start_to_close_timeout),
             retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
         )
 
         await workflow.execute_activity(
             activity_write_ozon_actions_to_odoo,
-            start_to_close_timeout=timedelta(seconds=20000),
+            start_to_close_timeout=timedelta(days=start_to_close_timeout),
             retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
         )
 
         await workflow.execute_activity(
             activity_remove_csv_files,
-            start_to_close_timeout=timedelta(seconds=20000),
+            start_to_close_timeout=timedelta(days=start_to_close_timeout),
             retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
         )
 
@@ -220,9 +244,12 @@ class OzonActionsWorkflow:
 class OzonTasksWorkflow:
     @workflow.run
     async def run(self) -> None:
+
+        start_to_close_timeout = 1
+
         await workflow.execute_activity(
             activity_create_daily_tasks,
-            start_to_close_timeout=timedelta(seconds=20000),
+            start_to_close_timeout=timedelta(days=start_to_close_timeout),
             retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
         )
 
@@ -231,21 +258,24 @@ class OzonTasksWorkflow:
 class OzonPricesWorkflow:
     @workflow.run
     async def run(self) -> None:
+
+        start_to_close_timeout = 1
+
         await workflow.execute_activity(
             activity_import_prices,
-            start_to_close_timeout=timedelta(seconds=20000),
+            start_to_close_timeout=timedelta(days=start_to_close_timeout),
             retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
         )
 
         await workflow.execute_activity(
             activity_write_prices_to_odoo,
-            start_to_close_timeout=timedelta(seconds=20000),
+            start_to_close_timeout=timedelta(days=start_to_close_timeout),
             retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
         )
 
         await workflow.execute_activity(
             activity_remove_csv_files,
-            start_to_close_timeout=timedelta(seconds=20000),
+            start_to_close_timeout=timedelta(days=start_to_close_timeout),
             retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
         )
 
@@ -254,9 +284,12 @@ class OzonPricesWorkflow:
 class OzonComputePercentExpensesWorkflow:
     @workflow.run
     async def run(self) -> None:
+
+        start_to_close_timeout = 1
+
         await workflow.execute_activity(
             activity_compute_products_percent_expenses,
-            start_to_close_timeout=timedelta(seconds=20000),
+            start_to_close_timeout=timedelta(days=start_to_close_timeout),
             retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
         )
 
@@ -265,9 +298,12 @@ class OzonComputePercentExpensesWorkflow:
 class OzonComputeCoefsAndGroupsWorkflow:
     @workflow.run
     async def run(self) -> None:
+
+        start_to_close_timeout = 1
+
         await workflow.execute_activity(
             activity_compute_products_coefs_and_groups,
-            start_to_close_timeout=timedelta(seconds=20000),
+            start_to_close_timeout=timedelta(days=start_to_close_timeout),
             retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
         )
 
@@ -276,9 +312,12 @@ class OzonComputeCoefsAndGroupsWorkflow:
 class OzonComputeAllExpensesWorkflow:
     @workflow.run
     async def run(self) -> None:
+
+        start_to_close_timeout = 1
+
         await workflow.execute_activity(
             activity_compute_products_all_expenses,
-            start_to_close_timeout=timedelta(seconds=20000),
+            start_to_close_timeout=timedelta(days=start_to_close_timeout),
             retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
         )
 
@@ -287,9 +326,12 @@ class OzonComputeAllExpensesWorkflow:
 class OzonAnalysisWorkflow:
     @workflow.run
     async def run(self) -> None:
+
+        start_to_close_timeout = 1
+
         await workflow.execute_activity(
             activity_ozon_analysis_data_activity,
-            start_to_close_timeout=timedelta(seconds=20000),
+            start_to_close_timeout=timedelta(days=start_to_close_timeout),
             retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
         )
 
@@ -298,8 +340,11 @@ class OzonAnalysisWorkflow:
 class OzonNumberOfProductsWorkflow:
     @workflow.run
     async def run(self) -> None:
+
+        start_to_close_timeout = 1
+
         await workflow.execute_activity(
             activity_get_ozon_number_of_products,
-            start_to_close_timeout=timedelta(seconds=20000),
+            start_to_close_timeout=timedelta(days=start_to_close_timeout),
             retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
         )
