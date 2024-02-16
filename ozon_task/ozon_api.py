@@ -85,7 +85,16 @@ FBS_FIX_COMMISSIONS = {
 FBS_PERCENT_COMMISSIONS = {
     "sales_percent_fbs": "Процент комиссии за продажу (FBS)",
 }
-OPERATION_TYPES = {
+TRANSACTIONS_TYPES = {
+    "all": "все",
+    "orders": "заказы",
+    "returns": "возвраты и отмены",
+    "services": "сервисные сборы",
+    "compensation": "компенсация",
+    "transferDelivery": "стоимость доставки",
+    "other": "прочее",
+}
+SERVICES_TYPES = {
     "MarketplaceNotDeliveredCostItem": "возврат невостребованного товара от покупателя на склад",
     "MarketplaceReturnAfterDeliveryCostItem": "возврат от покупателя на склад после доставки",
     "MarketplaceDeliveryCostItem": "доставка товара до покупателя",
@@ -470,11 +479,19 @@ def get_transactions(
 def import_transactions_from_ozon_api_to_file(
     file_path: str, date_from: str, date_to: str, next_page=1
 ):
+    """
+    accruals_for_sale - Стоимость товаров с учётом скидок продавца
+    sale_commission - Комиссия за продажу или возврат комиссии за продажу
+    amount - Итоговая сумма операции (стоимость - комиссия - стоимость доп.услуг)
+    """
     fieldnames = [
         "transaction_id",
         "transaction_date",
         "order_date",
         "name",
+        "accruals_for_sale",
+        "sale_commission",
+        "type",
         "amount",
         "product_skus",
         "services",
@@ -504,13 +521,15 @@ def import_transactions_from_ozon_api_to_file(
             transaction_date = oper["operation_date"]
             order_date = oper["posting"]["order_date"]
             name = oper["operation_type_name"]
+            accruals_for_sale = oper["accruals_for_sale"]
+            sale_commission = oper["sale_commission"]
+            transaction_type = TRANSACTIONS_TYPES.get(oper["type"], oper["type"])
             amount = oper["amount"]
             product_skus = [i["sku"] for i in oper["items"]]
 
             services = []
             for service in oper["services"]:
-                sn = OPERATION_TYPES.get(service["name"])
-                service_name = sn if sn else service["name"]
+                service_name = SERVICES_TYPES.get(service["name"], service["name"])
                 service_price = service["price"]
                 services.append((service_name, service_price))
 
@@ -520,6 +539,9 @@ def import_transactions_from_ozon_api_to_file(
                 "transaction_date": transaction_date,
                 "order_date": order_date if order_date else transaction_date,
                 "name": name,
+                "accruals_for_sale": accruals_for_sale,
+                "sale_commission": sale_commission,
+                "type": transaction_type,
                 "amount": amount,
                 "product_skus": product_skus,
                 "services": services,
@@ -1235,3 +1257,53 @@ def delete_products_from_action(action_id, product_ids: list):
     ).json()
 
     return response["result"]
+
+
+
+def get_monthly_sales_report(year_month: str):
+    """
+    year_month: "2024-01"
+    """
+    response = requests.post(
+        "https://api-seller.ozon.ru/v1/finance/realization",
+        headers=headers,
+        data=json.dumps({"date": year_month})).json()
+    if response.get("code"):
+        return response
+    return response["result"]
+
+def write_monthly_sales_report_to_json_file(file_path: str, year_month: str):
+    """
+    file_path: "*.json"
+    year_month: "2024-01"
+    """
+    data = get_monthly_sales_report(year_month)
+    if data.get("code"):
+        return data["message"]
+    with open(file_path, "w", newline="") as jsonfile:
+        json.dump(data, jsonfile)
+    return "OK"
+
+def get_previous_month(day) -> str:
+    """ 
+    If today 2023-04-xx returns: "2023-03"
+    """
+    if isinstance(day, str):
+        day = datetime.strptime(day, "%Y-%m")
+    first = day.replace(day=1)
+    prev_month = first - timedelta(days=1)
+    return prev_month.strftime("%Y-%m")
+
+def import_all_time_sales_reports():
+    year_month = datetime.today()
+    # отчет Озон за пред.месяц доступн после 5го числа текущего месяца
+    if year_month.day > 5:
+        pass
+    else:
+        year_month = year_month - timedelta(days=year_month.day+1)
+    
+    response = "OK"
+    while response == "OK":
+        year_month = get_previous_month(year_month)
+        response = write_monthly_sales_report_to_json_file(
+            file_path=f"{year_month}.json", year_month=year_month)
