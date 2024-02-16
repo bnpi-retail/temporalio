@@ -609,11 +609,11 @@ def import_products_from_ozon_api_to_file(file_path: str):
     last_id = ""
     products = ["" for _ in range(limit)]
 
-    max_attemp = 4
+    max_attemp = 3
     step = 0
     while (len(products) == limit) or step < max_attemp:
         step += 1
-        
+
         products, last_id = get_product(limit=limit, last_id=last_id)
         prod_ids = get_product_id(products)
         products_attrs = get_product_attributes(prod_ids, limit=limit)
