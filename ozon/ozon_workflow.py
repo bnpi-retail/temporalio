@@ -29,76 +29,76 @@ class GeneralOzonWorkflow:
             id="ozon-import-products-child-workflow-id",
         )
 
-        await workflow.execute_child_workflow(
-            OzonFboSupplyOrdersWorkflow.run,
-            id="ozon-fbo-supply-orders-workflow-id",
-        )
+        # await workflow.execute_child_workflow(
+        #     OzonFboSupplyOrdersWorkflow.run,
+        #     id="ozon-fbo-supply-orders-workflow-id",
+        # )
 
-        await workflow.execute_child_workflow(
-            OzonTransactionsWorkflow.run,
-            id="ozon-transactions-workflow-id",
-        )
+        # await workflow.execute_child_workflow(
+        #     OzonTransactionsWorkflow.run,
+        #     id="ozon-transactions-workflow-id",
+        # )
 
-        await workflow.execute_child_workflow(
-            OzonTransactionsPrevMonthWorkflow.run,
-            id="ozon-transactions-prev-month-workflow-id",
-        )
+        # await workflow.execute_child_workflow(
+        #     OzonTransactionsPrevMonthWorkflow.run,
+        #     id="ozon-transactions-prev-month-workflow-id",
+        # )
 
-        await workflow.execute_child_workflow(
-            OzonTransactionsPrevTwoYearWorkflow.run,
-            id="ozon-transactions-prev-two-year-workflow-id",
-        )
+        # await workflow.execute_child_workflow(
+        #     OzonTransactionsPrevTwoYearWorkflow.run,
+        #     id="ozon-transactions-prev-two-year-workflow-id",
+        # )
 
-        await workflow.execute_child_workflow(
-            OzonStocksWorkflow.run,
-            id="ozon-stocks-workflow-id",
-        )
+        # await workflow.execute_child_workflow(
+        #     OzonStocksWorkflow.run,
+        #     id="ozon-stocks-workflow-id",
+        # )
 
-        await workflow.execute_child_workflow(
-            OzonPostingsWorkflow.run,
-            id="ozon-postings-workflow-id",
-        )
+        # await workflow.execute_child_workflow(
+        #     OzonPostingsWorkflow.run,
+        #     id="ozon-postings-workflow-id",
+        # )
 
-        await workflow.execute_child_workflow(
-            OzonComputeAllExpensesWorkflow.run,
-            id="ozon-compute-all-expenses-workflow-id",
-        )
+        # await workflow.execute_child_workflow(
+        #     OzonComputeAllExpensesWorkflow.run,
+        #     id="ozon-compute-all-expenses-workflow-id",
+        # )
 
-        # This place?
-        await workflow.execute_child_workflow(
-            OzonTasksWorkflow.run,
-            id="ozon-tasks-workflow-id",
-        )
+        # # This place?
+        # await workflow.execute_child_workflow(
+        #     OzonTasksWorkflow.run,
+        #     id="ozon-tasks-workflow-id",
+        # )
 
-        # This place?
-        await workflow.execute_child_workflow(
-            OzonPricesWorkflow.run,
-            id="ozon-price-workflow-id",
-        )
+        # # This place?
+        # await workflow.execute_child_workflow(
+        #     OzonPricesWorkflow.run,
+        #     id="ozon-price-workflow-id",
+        # )
 
-        await workflow.execute_child_workflow(
-            OzonComputePercentExpensesWorkflow.run,
-            id="ozon-compute-percent-expenses-workflow-id",
-        )
+        # await workflow.execute_child_workflow(
+        #     OzonComputePercentExpensesWorkflow.run,
+        #     id="ozon-compute-percent-expenses-workflow-id",
+        # )
 
-        await workflow.execute_child_workflow(
-            OzonComputeCoefsAndGroupsWorkflow.run,
-            id="ozon-compute-coef-and-groups-expenses-workflow-id",
-        )
+        # await workflow.execute_child_workflow(
+        #     OzonComputeCoefsAndGroupsWorkflow.run,
+        #     id="ozon-compute-coef-and-groups-expenses-workflow-id",
+        # )
 
-        await workflow.execute_child_workflow(
-            OzonActionsWorkflow.run,
-            id="ozon-actions-workflow-id",
-        )
+        # await workflow.execute_child_workflow(
+        #     OzonActionsWorkflow.run,
+        #     id="ozon-actions-workflow-id",
+        # )
 
-        await workflow.execute_child_workflow(
-            OzonAnalysisWorkflow.run,
-            id="ozon-analysis-workflow-id",
-        )
+        # await workflow.execute_child_workflow(
+        #     OzonAnalysisWorkflow.run,
+        #     id="ozon-analysis-workflow-id",
+        # )
 
-        await workflow.execute_child_workflow(
-            OzonNumberOfProductsWorkflow.run,
-            id="ozon-number-of-prducst-workflow-id",
-        )
+        # await workflow.execute_child_workflow(
+        #     OzonNumberOfProductsWorkflow.run,
+        #     id="ozon-number-of-prducst-workflow-id",
+        # )
 
         return
