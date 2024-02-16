@@ -37,7 +37,7 @@ class OzonProductsWorkflow:
     @workflow.run
     async def run(self) -> None:
 
-        start_to_close_timeout = 1
+        start_to_close_timeout = 2
 
         await workflow.execute_activity(
             activity_import_products,
@@ -63,7 +63,7 @@ class OzonFboSupplyOrdersWorkflow:
     @workflow.run
     async def run(self) -> None:
 
-        start_to_close_timeout = 1
+        start_to_close_timeout = 2
 
         await workflow.execute_activity(
             activity_import_fbo_supply_orders,
@@ -89,7 +89,7 @@ class OzonTransactionsWorkflow:
     @workflow.run
     async def run(self) -> None:
 
-        start_to_close_timeout = 1
+        start_to_close_timeout = 2
 
         await workflow.execute_activity(
             activity_import_transactions,
@@ -115,7 +115,7 @@ class OzonTransactionsPrevMonthWorkflow:
     @workflow.run
     async def run(self) -> None:
 
-        start_to_close_timeout = 1
+        start_to_close_timeout = 2
         
         await workflow.execute_activity(
             activity_import_transactions_from_prev_month,
@@ -141,7 +141,7 @@ class OzonTransactionsPrevTwoYearWorkflow:
     @workflow.run
     async def run(self) -> None:
 
-        start_to_close_timeout = 1
+        start_to_close_timeout = 2
 
         await workflow.execute_activity(
             activity_import_transactions_from_prev_2_years,
@@ -167,7 +167,7 @@ class OzonStocksWorkflow:
     @workflow.run
     async def run(self) -> None:
 
-        start_to_close_timeout = 1
+        start_to_close_timeout = 2
 
         await workflow.execute_activity(
             activity_import_stocks,
@@ -193,7 +193,7 @@ class OzonPostingsWorkflow:
     @workflow.run
     async def run(self) -> None:
 
-        start_to_close_timeout = 1
+        start_to_close_timeout = 2
 
         await workflow.execute_activity(
             activity_import_postings,
@@ -219,7 +219,7 @@ class OzonActionsWorkflow:
     @workflow.run
     async def run(self) -> None:
 
-        start_to_close_timeout = 1
+        start_to_close_timeout = 2
 
         await workflow.execute_activity(
             activity_import_ozon_actions,
@@ -245,7 +245,7 @@ class OzonTasksWorkflow:
     @workflow.run
     async def run(self) -> None:
 
-        start_to_close_timeout = 1
+        start_to_close_timeout = 2
 
         await workflow.execute_activity(
             activity_create_daily_tasks,
@@ -259,7 +259,7 @@ class OzonPricesWorkflow:
     @workflow.run
     async def run(self) -> None:
 
-        start_to_close_timeout = 1
+        start_to_close_timeout = 2
 
         await workflow.execute_activity(
             activity_import_prices,
@@ -285,7 +285,7 @@ class OzonComputePercentExpensesWorkflow:
     @workflow.run
     async def run(self) -> None:
 
-        start_to_close_timeout = 1
+        start_to_close_timeout = 2
 
         await workflow.execute_activity(
             activity_compute_products_percent_expenses,
@@ -299,7 +299,7 @@ class OzonComputeCoefsAndGroupsWorkflow:
     @workflow.run
     async def run(self) -> None:
 
-        start_to_close_timeout = 1
+        start_to_close_timeout = 2
 
         await workflow.execute_activity(
             activity_compute_products_coefs_and_groups,
@@ -313,7 +313,7 @@ class OzonComputeAllExpensesWorkflow:
     @workflow.run
     async def run(self) -> None:
 
-        start_to_close_timeout = 1
+        start_to_close_timeout = 2
 
         await workflow.execute_activity(
             activity_compute_products_all_expenses,
@@ -327,7 +327,7 @@ class OzonAnalysisWorkflow:
     @workflow.run
     async def run(self) -> None:
 
-        start_to_close_timeout = 1
+        start_to_close_timeout = 2
 
         await workflow.execute_activity(
             activity_ozon_analysis_data_activity,
@@ -341,7 +341,7 @@ class OzonNumberOfProductsWorkflow:
     @workflow.run
     async def run(self) -> None:
 
-        start_to_close_timeout = 1
+        start_to_close_timeout = 2
 
         await workflow.execute_activity(
             activity_get_ozon_number_of_products,
