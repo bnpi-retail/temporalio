@@ -1,5 +1,4 @@
 import asyncio
-import tools
 from datetime import timedelta
 
 from temporalio import activity, workflow
@@ -9,10 +8,11 @@ from temporalio.worker import Worker
 
 with workflow.unsafe.imports_passed_through():
     from get_analysys_data_daily_2_month import OzonAnalysisData
+    from tools import odoo_log
 
 
 @activity.defn
-@tools.odoo_log({'name': 'ozon_analysis_data_activity'})
+@odoo_log({'name': 'Интерес к продуктам за 65 дней'})
 async def ozon_analysis_data_activity():
     return OzonAnalysisData().main()
 
@@ -24,7 +24,7 @@ class OzonAnalysisWorkflow:
         await workflow.execute_activity(
             ozon_analysis_data_activity,
             start_to_close_timeout=timedelta(seconds=20000),
-            retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
+            retry_policy=RetryPolicy(maximum_interval=timedelta(seconds=24)),
         )
 
 

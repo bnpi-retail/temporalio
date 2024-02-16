@@ -84,7 +84,7 @@ class OzonAnalysisData(AuthOdoo):
 
     def main(self):
         date_from, date_to = self.get_days()
-        log_data = {"date": "30.04.1990"}
+        log_data = {"data": "Данные из активити"}
         while True:
             try:
                 data = self.requests_ozon(date_from, date_to)
@@ -93,6 +93,7 @@ class OzonAnalysisData(AuthOdoo):
                 continue
             print(self.offset)
 
+            sleep(15)
             break
             data = self.treatment(data)
             self.send_to_odoo(data)
