@@ -1,7 +1,5 @@
 import asyncio
-
 from datetime import timedelta
-from typing import NoReturn
 
 from temporalio import activity, workflow
 from temporalio.client import Client
@@ -9,12 +7,14 @@ from temporalio.common import RetryPolicy
 from temporalio.worker import Worker
 
 with workflow.unsafe.imports_passed_through():
-    from get_analysys_data import OzonAnalysisData
+    from get_analysys_data_daily_2_month import OzonAnalysisData
+    from tools import odoo_log
 
 
 @activity.defn
-async def ozon_analysis_data_activity() -> NoReturn:
-    OzonAnalysisData().main()
+@odoo_log({'name': 'Интерес к продуктам за 65 дней'})
+async def ozon_analysis_data_activity():
+    return OzonAnalysisData().main()
 
 
 @workflow.defn
@@ -24,7 +24,7 @@ class OzonAnalysisWorkflow:
         await workflow.execute_activity(
             ozon_analysis_data_activity,
             start_to_close_timeout=timedelta(seconds=20000),
-            retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
+            retry_policy=RetryPolicy(maximum_interval=timedelta(seconds=24)),
         )
 
 
