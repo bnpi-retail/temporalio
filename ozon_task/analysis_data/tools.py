@@ -1,13 +1,28 @@
+import traceback
 import requests
-import json
+import logging
 
 from functools import wraps
 from typing import Callable
 from auth_odoo import AuthOdoo
 
+logger = logging.getLogger(__name__)
+
 
 def odoo_log(decorator_data: dict):
+    """
+    Decorator for activity that create "ozon.mass_data_import" log data in odoo.
+    :param decorator_data: {'name': 'Импорт продуктов'} will use to
+           set "ozon.mass_data_import" name
+    :return:
+    """
+
     def decorator(fn: Callable):
+        """
+        fn must return data dict that will write to "ozon.mass_data_import"
+        displaying_data field in key: value format
+        """
+
         @wraps(fn)
         async def wrapper(*args, **kwargs):
             print(decorator_data)
@@ -61,4 +76,3 @@ class OdooActivitiesLogging(AuthOdoo):
 
         if response.status_code != 200:
             raise requests.exceptions.RequestException()
-

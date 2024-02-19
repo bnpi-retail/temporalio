@@ -6,6 +6,7 @@ from os import getenv
 from dotenv import load_dotenv
 from datetime import timedelta
 from time import sleep
+from collections import defaultdict
 
 from auth_odoo import AuthOdoo
 
@@ -21,12 +22,12 @@ class OzonAnalysisData(AuthOdoo):
         }
         self.chunk_size = 500
         self.offset = 0
-        self.skus = set()
+        self.counter = defaultdict(int)
 
     @staticmethod
     def get_days() -> tuple:
         date_to = datetime.date.today() - timedelta(days=1)
-        date_from = date_to - timedelta(days=75)
+        date_from = date_to - timedelta(days=61)
         return date_from, date_to
 
     def requests_ozon(self, date_from, date_to) -> dict:
@@ -60,10 +61,7 @@ class OzonAnalysisData(AuthOdoo):
             hits_view = product['metrics'][0]
             hits_tocart = product['metrics'][1]
 
-            # if sku not in self.skus:
-            #     self.skus.add(sku)
-            # else:
-            #     continue
+            self.counter[date] += 1
 
             products[(sku, date)] = {
                 'hits_view': hits_view,
@@ -84,7 +82,6 @@ class OzonAnalysisData(AuthOdoo):
 
     def main(self):
         date_from, date_to = self.get_days()
-        log_data = {"data": "Данные из активити"}
         while True:
             try:
                 data = self.requests_ozon(date_from, date_to)
@@ -93,16 +90,21 @@ class OzonAnalysisData(AuthOdoo):
                 continue
             print(self.offset)
 
-            sleep(15)
-            break
             data = self.treatment(data)
             self.send_to_odoo(data)
 
             if len(data) != 1000:
                 break
 
-            sleep(30)
+            # sleep(30)
 
+        records_qty = sum(self.counter.values())
+        log_data = {
+            "Начало периода": date_from.strftime("%d.%m.%Y"),
+            "Конец периода": date_to.strftime("%d.%m.%Y"),
+            "Результат": f"{len(self.counter)} из {(date_to - date_from).days} дней импортировано. "
+                         f"Всего {records_qty} записей"
+        }
         return log_data
 
 
