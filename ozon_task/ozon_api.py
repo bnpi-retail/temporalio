@@ -615,6 +615,7 @@ def import_products_from_ozon_api_to_file(file_path: str):
         for prod in products_attrs:
             id_on_platform = prod["id"]
             attrs = prod["attributes"]
+            keywords = None
             for a in attrs:
                 if a["attribute_id"] == 9461:
                     category_name = a["values"][0]["value"]
