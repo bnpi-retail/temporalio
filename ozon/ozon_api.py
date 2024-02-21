@@ -1,8 +1,8 @@
 import csv
 import json
-from collections import defaultdict
 from itertools import groupby
 from operator import itemgetter
+from typing import Union
 import os
 from time import sleep
 import requests
@@ -20,7 +20,6 @@ session_id = authenticate_to_odoo(USERNAME, PASSWORD)
 settings = get_settings_credentials(session_id)
 OZON_API_KEY = settings.get("OZON_API_KEY")
 
-
 if not OZON_CLIENT_ID or not OZON_API_KEY:
     raise ValueError("Env variables $OZON_CLIENT_ID and $OZON_API_KEY weren't found")
 
@@ -36,7 +35,6 @@ attributes_ids = {
     "name": 4180,
     "description": 4191,
 }
-
 
 ALL_COMMISSIONS = {
     "acquiring": "Максимальная комиссия за эквайринг",
@@ -285,28 +283,6 @@ def get_product_sku_from_product_info_list(product_info_list: list) -> dict:
     return skus
 
 
-# def get_categories() -> dict:
-#     response = requests.post(
-#         "https://api-seller.ozon.ru/v1/description-category/tree",
-#         headers=headers,
-#         data=json.dumps(
-#             {
-#                 "language": "RU"
-#             }
-#         ),
-#     )
-#     response = response.json()["result"]
-#     categories_dict = defaultdict()
-#     for categories_first_level in response:
-#         for categories_second_level in categories_first_level['children']:
-#             description_category_id = categories_second_level['description_category_id']
-#             category_name = categories_second_level['category_name']
-#             categories_dict[description_category_id] = category_name
-#
-#     print(categories_dict)
-#     return categories_dict
-
-
 def get_product_attributes(product_ids: list, limit=1000) -> list:
     response = requests.post(
         "https://api-seller.ozon.ru/v3/products/info/attributes",
@@ -453,10 +429,10 @@ def import_comissions_by_categories_from_ozon_api_to_file(file_path: str):
 
 
 def get_transactions(
-    date_from: str = "2023-11-01T00:00:00.000Z",
-    date_to: str = "2023-12-01T00:00:00.000Z",
-    page=1,
-    page_size=1000,
+        date_from: str = "2023-11-01T00:00:00.000Z",
+        date_to: str = "2023-12-01T00:00:00.000Z",
+        page=1,
+        page_size=1000,
 ):
     result = requests.post(
         "https://api-seller.ozon.ru/v3/finance/transaction/list",
@@ -491,7 +467,7 @@ def get_transactions(
 
 
 def import_transactions_from_ozon_api_to_file(
-    file_path: str, date_from: str, date_to: str, next_page=1
+        file_path: str, date_from: str, date_to: str, next_page=1
 ):
     fieldnames = [
         "transaction_id",
@@ -624,10 +600,12 @@ def import_products_from_ozon_api_to_file(file_path: str):
     limit = 1000
     last_id = ""
     products = ["" for _ in range(limit)]
+
     max_step = 3
     step = 0
     while (len(products) == limit) or step < max_step:
         step += 1
+
         products, last_id = get_product(limit=limit, last_id=last_id)
         prod_ids = get_product_id(products)
         products_attrs = get_product_attributes(prod_ids, limit=limit)
@@ -638,21 +616,23 @@ def import_products_from_ozon_api_to_file(file_path: str):
         products_imgs_urls = get_image_urls_from_product_info_list(prod_info_list)
         products_skus = get_product_sku_from_product_info_list(prod_info_list)
         products_rows = []
+
         for prod in products_attrs:
             id_on_platform = prod["id"]
-            attrs = prod["attributes"]
-            keywords = ''
+
             category_name = ''
-            for a in attrs:
-                if a["attribute_id"] == 9461:
-                    category_name = a["values"][0]["value"]
-                if a["attribute_id"] == 22387:
-                    parent_category = a["values"][0]["value"]
-                    full_categories_id = a["values"][0]["dictionary_value_id"]
-                if a["attribute_id"] == 4191:
-                    description = a["values"][0]["value"]
-                if a["attribute_id"] == 22336:
-                    keywords = a["values"][0]["value"]
+            keywords = ''
+            for attr in prod["attributes"]:
+                if attr["attribute_id"] == 9461:
+                    category_name = attr["values"][0]["value"]
+                if attr["attribute_id"] == 22387:
+                    parent_category = attr["values"][0]["value"]
+                    full_categories_id = attr["values"][0]["dictionary_value_id"]
+                if attr["attribute_id"] == 4191:
+                    description = attr["values"][0]["value"]
+                if attr["attribute_id"] == 22336:
+                    keywords = attr["values"][0]["value"]
+
             description_category_id = prod["description_category_id"]
             offer_id = prod["offer_id"]
             name = prod["name"]
@@ -690,7 +670,6 @@ def import_products_from_ozon_api_to_file(file_path: str):
                 "full_categories_id": full_categories_id,
                 "name": name,
                 "description": description,
-                "keywords": keywords,
                 "length": dimensions["length"],
                 "width": dimensions["width"],
                 "height": dimensions["height"],
@@ -705,7 +684,9 @@ def import_products_from_ozon_api_to_file(file_path: str):
                 "price_index": price_index,
                 **commissions,
                 "img_urls": imgs_urls,
+                "keywords": keywords,
             }
+
             products_rows.append(row)
             print(f"Product {id_on_platform} was imported")
         with open(file_path, "a", newline="") as csvfile:
@@ -779,12 +760,12 @@ def get_fbs_warehouses_stocks(skus: list) -> list:
 def split_list(l, n):
     """Splits list into n chunks"""
     k, m = divmod(len(l), n)
-    return (l[i * k + min(i, m) : (i + 1) * k + min(i + 1, m)] for i in range(n))
+    return (l[i * k + min(i, m): (i + 1) * k + min(i + 1, m)] for i in range(n))
 
 
 def split_list_into_chunks_of_size_n(l, n):
     for i in range(0, len(l), n):
-        yield l[i : i + n]
+        yield l[i: i + n]
 
 
 def import_stocks_from_ozon_api_to_file(file_path: str):
@@ -946,9 +927,9 @@ def get_postings_fbs(date_from: str, date_to: str, limit=1000, offset=0):
 
 
 def import_postings_from_ozon_api_to_file(
-    file_path: str,
-    date_from: str,
-    date_to: str,
+        file_path: str,
+        date_from: str,
+        date_to: str,
 ):
     """Import postings for both trading schemes FBS and FBO into csv file to upload in ozon.posting model"""
     fieldnames = [
