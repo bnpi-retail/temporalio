@@ -1,5 +1,6 @@
 import csv
 import json
+from collections import defaultdict
 from itertools import groupby
 from operator import itemgetter
 import os
@@ -282,6 +283,28 @@ def get_product_sku_from_product_info_list(product_info_list: list) -> dict:
             "fbs_sku": item["fbs_sku"],
         }
     return skus
+
+
+# def get_categories() -> dict:
+#     response = requests.post(
+#         "https://api-seller.ozon.ru/v1/description-category/tree",
+#         headers=headers,
+#         data=json.dumps(
+#             {
+#                 "language": "RU"
+#             }
+#         ),
+#     )
+#     response = response.json()["result"]
+#     categories_dict = defaultdict()
+#     for categories_first_level in response:
+#         for categories_second_level in categories_first_level['children']:
+#             description_category_id = categories_second_level['description_category_id']
+#             category_name = categories_second_level['category_name']
+#             categories_dict[description_category_id] = category_name
+#
+#     print(categories_dict)
+#     return categories_dict
 
 
 def get_product_attributes(product_ids: list, limit=1000) -> list:
@@ -616,9 +639,7 @@ def import_products_from_ozon_api_to_file(file_path: str):
             id_on_platform = prod["id"]
             attrs = prod["attributes"]
             keywords = ''
-            parent_category = ''
-            description = ''
-            full_categories_id = ''
+            category_name = ''
             for a in attrs:
                 if a["attribute_id"] == 9461:
                     category_name = a["values"][0]["value"]
