@@ -601,7 +601,7 @@ def import_products_from_ozon_api_to_file(file_path: str):
     last_id = ""
     products = ["" for _ in range(limit)]
 
-    max_step = 3
+    max_step = 1000
     step = 0
     while (len(products) == limit) or step < max_step:
         step += 1
