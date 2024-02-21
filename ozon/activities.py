@@ -54,9 +54,12 @@ async def activity_write_products_to_odoo() -> None:
 
     for fpath in os.listdir():
         if fpath.startswith("chunk"):
-            send_csv_file_to_ozon_import_file(
+            response = send_csv_file_to_ozon_import_file(
                 url=url, session_id=session_id, file_path=fpath
             )
+            if response.status_code != 200:
+                print("activity_write_products_to_odoo error. Traceback in odoo log")
+                raise requests.exceptions.RequestException()
 
 @activity.defn
 async def activity_import_transactions() -> None:

@@ -69,6 +69,7 @@ def send_csv_file_to_ozon_import_file(url, session_id, file_path):
         files = {"file": encoded_data}
         response = requests.post(url, headers=headers, files=files)
         print(f"File {file_path} sent. Response: {response.text}")
+
         return response
 
 
