@@ -616,7 +616,6 @@ def import_products_from_ozon_api_to_file(file_path: str):
             id_on_platform = prod["id"]
             attrs = prod["attributes"]
             keywords = ''
-            category_name = ''
             parent_category = ''
             description = ''
             full_categories_id = ''
@@ -653,7 +652,7 @@ def import_products_from_ozon_api_to_file(file_path: str):
             sku = products_skus[id_on_platform]["sku"]
             fbo_sku = products_skus[id_on_platform]["fbo_sku"]
             fbs_sku = products_skus[id_on_platform]["fbs_sku"]
-            imgs_urls = products_imgs_urls[id_on_platform]
+            imgs_urls = products_imgs_urls.get(id_on_platform)
 
             row = {
                 "id_on_platform": id_on_platform,
