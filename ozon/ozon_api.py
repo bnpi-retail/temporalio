@@ -1,8 +1,8 @@
 import csv
 import json
+from collections import defaultdict
 from itertools import groupby
 from operator import itemgetter
-from typing import Union
 import os
 from time import sleep
 import requests
@@ -285,6 +285,28 @@ def get_product_sku_from_product_info_list(product_info_list: list) -> dict:
     return skus
 
 
+# def get_categories() -> dict:
+#     response = requests.post(
+#         "https://api-seller.ozon.ru/v1/description-category/tree",
+#         headers=headers,
+#         data=json.dumps(
+#             {
+#                 "language": "RU"
+#             }
+#         ),
+#     )
+#     response = response.json()["result"]
+#     categories_dict = defaultdict()
+#     for categories_first_level in response:
+#         for categories_second_level in categories_first_level['children']:
+#             description_category_id = categories_second_level['description_category_id']
+#             category_name = categories_second_level['category_name']
+#             categories_dict[description_category_id] = category_name
+#
+#     print(categories_dict)
+#     return categories_dict
+
+
 def get_product_attributes(product_ids: list, limit=1000) -> list:
     response = requests.post(
         "https://api-seller.ozon.ru/v3/products/info/attributes",
@@ -363,7 +385,6 @@ def get_product_commissions(product_ids: list, limit=1):
             **item["commissions"],
         }
     return product_comissions
-
 
 
 def import_comissions_by_categories_from_ozon_api_to_file(file_path: str):
@@ -569,11 +590,6 @@ def get_image_urls_from_product_info_list(product_info_list: list) -> dict:
             )
     return images
 
-def get_keywords_from_attr(attr: dict) -> Union[str, None]:
-    keywords = None
-    if attr["attribute_id"] == 22336:
-        keywords = attr["values"][0]["value"]
-    return keywords
 
 def import_products_from_ozon_api_to_file(file_path: str):
     fieldnames = [
@@ -608,12 +624,10 @@ def import_products_from_ozon_api_to_file(file_path: str):
     limit = 1000
     last_id = ""
     products = ["" for _ in range(limit)]
-
     max_step = 3
     step = 0
     while (len(products) == limit) or step < max_step:
         step += 1
-
         products, last_id = get_product(limit=limit, last_id=last_id)
         prod_ids = get_product_id(products)
         products_attrs = get_product_attributes(prod_ids, limit=limit)
@@ -624,20 +638,21 @@ def import_products_from_ozon_api_to_file(file_path: str):
         products_imgs_urls = get_image_urls_from_product_info_list(prod_info_list)
         products_skus = get_product_sku_from_product_info_list(prod_info_list)
         products_rows = []
-        
         for prod in products_attrs:
             id_on_platform = prod["id"]
-
-            for attr in prod["attributes"]:
-                if attr["attribute_id"] == 9461:
-                    category_name = attr["values"][0]["value"]
-                if attr["attribute_id"] == 22387:
-                    parent_category = attr["values"][0]["value"]
-                    full_categories_id = attr["values"][0]["dictionary_value_id"]
-                if attr["attribute_id"] == 4191:
-                    description = attr["values"][0]["value"]
-                keywords = get_keywords_from_attr(attr=attr)
-
+            attrs = prod["attributes"]
+            keywords = ''
+            category_name = ''
+            for a in attrs:
+                if a["attribute_id"] == 9461:
+                    category_name = a["values"][0]["value"]
+                if a["attribute_id"] == 22387:
+                    parent_category = a["values"][0]["value"]
+                    full_categories_id = a["values"][0]["dictionary_value_id"]
+                if a["attribute_id"] == 4191:
+                    description = a["values"][0]["value"]
+                if a["attribute_id"] == 22336:
+                    keywords = a["values"][0]["value"]
             description_category_id = prod["description_category_id"]
             offer_id = prod["offer_id"]
             name = prod["name"]
@@ -661,7 +676,7 @@ def import_products_from_ozon_api_to_file(file_path: str):
             sku = products_skus[id_on_platform]["sku"]
             fbo_sku = products_skus[id_on_platform]["fbo_sku"]
             fbs_sku = products_skus[id_on_platform]["fbs_sku"]
-            imgs_urls = products_imgs_urls[id_on_platform]
+            imgs_urls = products_imgs_urls.get(id_on_platform)
 
             row = {
                 "id_on_platform": id_on_platform,
@@ -675,6 +690,7 @@ def import_products_from_ozon_api_to_file(file_path: str):
                 "full_categories_id": full_categories_id,
                 "name": name,
                 "description": description,
+                "keywords": keywords,
                 "length": dimensions["length"],
                 "width": dimensions["width"],
                 "height": dimensions["height"],
@@ -690,10 +706,6 @@ def import_products_from_ozon_api_to_file(file_path: str):
                 **commissions,
                 "img_urls": imgs_urls,
             }
-
-            if keywords is not None:
-                row["keywords"] = keywords
-
             products_rows.append(row)
             print(f"Product {id_on_platform} was imported")
         with open(file_path, "a", newline="") as csvfile:
