@@ -10,7 +10,6 @@ with workflow.unsafe.imports_passed_through():
         OzonProductsWorkflow,
         OzonFboSupplyOrdersWorkflow,
         OzonTransactionsWorkflow,
-        OzonTransactionsPrevMonthWorkflow,
         OzonStocksWorkflow,
         OzonPostingsWorkflow,
         OzonActionsWorkflow,
@@ -21,7 +20,6 @@ with workflow.unsafe.imports_passed_through():
         OzonPricesWorkflow,
         OzonAnalysisWorkflow,
         OzonNumberOfProductsWorkflow,
-        OzonTransactionsPrevTwoYearWorkflow,
     )
     from activities import (
         activity_compute_products_all_expenses,
@@ -64,7 +62,6 @@ async def main():
             OzonProductsWorkflow,
             OzonFboSupplyOrdersWorkflow,
             OzonTransactionsWorkflow,
-            OzonTransactionsPrevMonthWorkflow,
             OzonStocksWorkflow,
             OzonPostingsWorkflow,
             OzonActionsWorkflow,
@@ -75,7 +72,6 @@ async def main():
             OzonPricesWorkflow,
             OzonAnalysisWorkflow,
             OzonNumberOfProductsWorkflow,
-            OzonTransactionsPrevTwoYearWorkflow,
         ],
         activities = [
             activity_compute_products_all_expenses,
