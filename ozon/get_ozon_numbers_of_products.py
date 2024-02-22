@@ -86,3 +86,4 @@ class OzonNumberOfProducts(AuthOdoo):
             data = self.requests_ozon(skus)
             data = self.treatment(data)
             self.send_to_odoo(data)
+        print("Number of products activity done")
