@@ -17,8 +17,6 @@ with workflow.unsafe.imports_passed_through():
         activity_import_products,
         activity_import_stocks,
         activity_import_transactions,
-        activity_import_transactions_from_prev_2_years,
-        activity_import_transactions_from_prev_month,
         activity_remove_csv_files,
         activity_write_fbo_supply_orders_to_odoo,
         activity_write_ozon_actions_to_odoo,
