@@ -109,59 +109,6 @@ class OzonTransactionsWorkflow:
             retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
         )
 
-
-@workflow.defn
-class OzonTransactionsPrevMonthWorkflow:
-    @workflow.run
-    async def run(self) -> None:
-
-        start_to_close_timeout = 2
-        
-        await workflow.execute_activity(
-            activity_import_transactions_from_prev_month,
-            start_to_close_timeout=timedelta(days=start_to_close_timeout),
-            retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
-        )
-
-        await workflow.execute_activity(
-            activity_write_transactions_to_odoo,
-            start_to_close_timeout=timedelta(days=start_to_close_timeout),
-            retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
-        )
-
-        await workflow.execute_activity(
-            activity_remove_csv_files,
-            start_to_close_timeout=timedelta(days=start_to_close_timeout),
-            retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
-        )
-
-
-@workflow.defn
-class OzonTransactionsPrevTwoYearWorkflow:
-    @workflow.run
-    async def run(self) -> None:
-
-        start_to_close_timeout = 2
-
-        await workflow.execute_activity(
-            activity_import_transactions_from_prev_2_years,
-            start_to_close_timeout=timedelta(days=start_to_close_timeout),
-            retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
-        )
-
-        await workflow.execute_activity(
-            activity_write_transactions_to_odoo,
-            start_to_close_timeout=timedelta(days=start_to_close_timeout),
-            retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
-        )
-
-        await workflow.execute_activity(
-            activity_remove_csv_files,
-            start_to_close_timeout=timedelta(days=start_to_close_timeout),
-            retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
-        )
-
-
 @workflow.defn
 class OzonStocksWorkflow:
     @workflow.run
