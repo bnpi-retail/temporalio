@@ -26,7 +26,8 @@ class OzonAnalysisData(AuthOdoo):
 
     @staticmethod
     def get_days() -> tuple:
-        date_from = date_to = datetime.date.today() - timedelta(days=1)
+        date_to = datetime.date.today() - timedelta(days=1)
+        date_from = date_to - timedelta(days=61)
         return date_from, date_to
 
     def requests_ozon(self, date_from, date_to) -> dict:
@@ -94,6 +95,7 @@ class OzonAnalysisData(AuthOdoo):
 
             if len(data) != 1000:
                 break
+
 
         records_qty = sum(self.counter.values())
         log_data = {
