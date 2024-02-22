@@ -5,7 +5,6 @@ with workflow.unsafe.imports_passed_through():
         OzonProductsWorkflow,
         OzonFboSupplyOrdersWorkflow,
         OzonTransactionsWorkflow,
-        OzonTransactionsPrevMonthWorkflow,
         OzonStocksWorkflow,
         OzonPostingsWorkflow,
         OzonActionsWorkflow,
@@ -16,7 +15,6 @@ with workflow.unsafe.imports_passed_through():
         OzonPricesWorkflow,
         OzonAnalysisWorkflow,
         OzonNumberOfProductsWorkflow,
-        OzonTransactionsPrevTwoYearWorkflow,
     )
 
 
@@ -40,16 +38,6 @@ class GeneralOzonWorkflow:
         )
 
         await workflow.execute_child_workflow(
-            OzonTransactionsPrevMonthWorkflow.run,
-            id="ozon-transactions-prev-month-workflow-id",
-        )
-
-        await workflow.execute_child_workflow(
-            OzonTransactionsPrevTwoYearWorkflow.run,
-            id="ozon-transactions-prev-two-year-workflow-id",
-        )
-
-        await workflow.execute_child_workflow(
             OzonStocksWorkflow.run,
             id="ozon-stocks-workflow-id",
         )
@@ -57,6 +45,21 @@ class GeneralOzonWorkflow:
         await workflow.execute_child_workflow(
             OzonPostingsWorkflow.run,
             id="ozon-postings-workflow-id",
+        )
+
+        await workflow.execute_child_workflow(
+            OzonActionsWorkflow.run,
+            id="ozon-actions-workflow-id",
+        )
+
+        await workflow.execute_child_workflow(
+            OzonComputePercentExpensesWorkflow.run,
+            id="ozon-compute-percent-expenses-workflow-id",
+        )
+
+        await workflow.execute_child_workflow(
+            OzonComputeCoefsAndGroupsWorkflow.run,
+            id="ozon-compute-coef-and-groups-expenses-workflow-id",
         )
 
         await workflow.execute_child_workflow(
@@ -74,21 +77,6 @@ class GeneralOzonWorkflow:
         await workflow.execute_child_workflow(
             OzonPricesWorkflow.run,
             id="ozon-price-workflow-id",
-        )
-
-        await workflow.execute_child_workflow(
-            OzonComputePercentExpensesWorkflow.run,
-            id="ozon-compute-percent-expenses-workflow-id",
-        )
-
-        await workflow.execute_child_workflow(
-            OzonComputeCoefsAndGroupsWorkflow.run,
-            id="ozon-compute-coef-and-groups-expenses-workflow-id",
-        )
-
-        await workflow.execute_child_workflow(
-            OzonActionsWorkflow.run,
-            id="ozon-actions-workflow-id",
         )
 
         await workflow.execute_child_workflow(
