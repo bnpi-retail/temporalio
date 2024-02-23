@@ -45,8 +45,8 @@ ACTIONS_PATH = getenv("ACTIONS_PATH")
 
 @activity.defn
 @odoo_log({'name': 'Импорт продуктов из Озон API в файл'})
-async def activity_import_products() -> None:
-    import_products_from_ozon_api_to_file(PRODUCTS_PATH)
+async def activity_import_products() -> dict:
+    return import_products_from_ozon_api_to_file(PRODUCTS_PATH)
 
 @activity.defn
 @odoo_log({'name': 'Импорт Продуктов из файла в odoo'})

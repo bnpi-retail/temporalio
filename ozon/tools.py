@@ -16,17 +16,17 @@ def odoo_log(decorator_data: dict):
            set "ozon.mass_data_import" name
     :return:
     """
-    def decorator(fn: Callable):
+    def decorator(activity: Callable):
         """
         fn must return data dict that will write to "ozon.mass_data_import"
         displaying_data field in key: value format
         """
-        @wraps(fn)
+        @wraps(activity)
         async def wrapper(*args, **kwargs):
             print(decorator_data)
             oal = OdooActivitiesLogging()
             log_id = await oal.create_mass_data_import(decorator_data)
-            res = await fn(*args, **kwargs)
+            res = await activity(*args, **kwargs)
             if log_id:
                 data = {
                     'activity_data': res,
@@ -73,3 +73,7 @@ class OdooActivitiesLogging(AuthOdoo):
 
         if response.status_code != 200:
             raise requests.exceptions.RequestException()
+
+
+class OzonApiActivityException(Exception):
+    pass
