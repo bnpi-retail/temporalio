@@ -122,9 +122,12 @@ async def activity_write_transactions_to_odoo() -> None:
 
     for fpath in os.listdir():
         if fpath.startswith("chunk"):
-            send_csv_file_to_ozon_import_file(
+            response = send_csv_file_to_ozon_import_file(
                 url=url, session_id=session_id, file_path=fpath
             )
+            if response.status_code != 200:
+                print("activity_write_transactions_to_odoo error. Traceback in odoo log")
+                raise requests.exceptions.RequestException()
 
 @activity.defn
 async def activity_import_stocks() -> None:
@@ -138,9 +141,12 @@ async def activity_write_stocks_to_odoo() -> None:
 
     for fpath in os.listdir():
         if fpath.startswith("chunk"):
-            send_csv_file_to_ozon_import_file(
+            response = send_csv_file_to_ozon_import_file(
                 url=url, session_id=session_id, file_path=fpath
             )
+            if response.status_code != 200:
+                print("activity_write_stocks_to_odoo error. Traceback in odoo log")
+                raise requests.exceptions.RequestException()
 
 @activity.defn
 async def activity_remove_csv_files() -> None:
@@ -152,6 +158,9 @@ async def activity_compute_products_coefs_and_groups() -> None:
     url = "http://0.0.0.0:8070/compute/products_coefs_and_groups"
     headers = {"Cookie": f"session_id={session_id}"}
     response = requests.post(url, headers=headers)
+    if response.status_code != 200:
+        print("activity_compute_products_coefs_and_groups error. Traceback in odoo log")
+        raise requests.exceptions.RequestException()
     print(response.text)
 
 @activity.defn
@@ -169,6 +178,9 @@ async def activity_compute_products_all_expenses() -> None:
     url = "http://0.0.0.0:8070/compute/products_all_expenses"
     headers = {"Cookie": f"session_id={session_id}"}
     response = requests.post(url, headers=headers)
+    if response.status_code != 200:
+        print("activity_compute_products_all_expenses error. Traceback in odoo log")
+        raise requests.exceptions.RequestException()
     print(response.text)
 
 @activity.defn
@@ -177,6 +189,9 @@ async def activity_create_daily_tasks() -> None:
     url = "http://0.0.0.0:8070/tasks/create_daily_tasks"
     headers = {"Cookie": f"session_id={session_id}"}
     response = requests.post(url, headers=headers)
+    if response.status_code != 200:
+        print("activity_create_daily_tasks error. Traceback in odoo log")
+        raise requests.exceptions.RequestException()
     print(response.text)
 
 @activity.defn
@@ -191,9 +206,12 @@ async def activity_write_prices_to_odoo() -> None:
 
     for fpath in os.listdir():
         if fpath.startswith("chunk"):
-            send_csv_file_to_ozon_import_file(
+            response = send_csv_file_to_ozon_import_file(
                 url=url, session_id=session_id, file_path=fpath
             )
+            if response.status_code != 200:
+                print("activity_write_prices_to_odoo error. Traceback in odoo log")
+                raise requests.exceptions.RequestException()
 
 @activity.defn
 async def activity_import_postings() -> None:
@@ -216,9 +234,12 @@ async def activity_write_postings_to_odoo() -> None:
 
     for fpath in os.listdir():
         if fpath.startswith("chunk"):
-            send_csv_file_to_ozon_import_file(
+            response = send_csv_file_to_ozon_import_file(
                 url=url, session_id=session_id, file_path=fpath
             )
+            if response.status_code != 200:
+                print("activity_import_postings error. Traceback in odoo log")
+                raise requests.exceptions.RequestException()
 
 @activity.defn
 async def activity_import_fbo_supply_orders() -> None:
@@ -232,9 +253,12 @@ async def activity_write_fbo_supply_orders_to_odoo() -> None:
 
     for fpath in os.listdir():
         if fpath.startswith("chunk"):
-            send_csv_file_to_ozon_import_file(
+            response = send_csv_file_to_ozon_import_file(
                 url=url, session_id=session_id, file_path=fpath
             )
+            if response.status_code != 200:
+                print("activity_write_fbo_supply_orders_to_odoo error. Traceback in odoo log")
+                raise requests.exceptions.RequestException()
 
 @activity.defn
 async def activity_import_ozon_actions() -> None:
@@ -244,9 +268,12 @@ async def activity_import_ozon_actions() -> None:
 async def activity_write_ozon_actions_to_odoo() -> None:
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
     url = "http://0.0.0.0:8070/import/ozon_actions"
-    send_csv_file_to_ozon_import_file(
+    response = send_csv_file_to_ozon_import_file(
         url=url, session_id=session_id, file_path=ACTIONS_PATH
     )
+    if response.status_code != 200:
+        print("activity_write_fbo_supply_orders_to_odoo error. Traceback in odoo log")
+        raise requests.exceptions.RequestException()
 
 @activity.defn
 async def activity_ozon_analysis_data_activity() -> None:
