@@ -81,9 +81,16 @@ class OzonNumberOfProducts(AuthOdoo):
     def main(self):
         all_skus = self.get_skus()
         chunks = self.create_chunks(all_skus)
+        qty = 0
 
-        for skus in chunks:
-            data = self.requests_ozon(skus)
-            data = self.treatment(data)
-            self.send_to_odoo(data)
+        # for skus in chunks:
+        #     data = self.requests_ozon(skus)
+        #     data = self.treatment(data)
+        #     self.send_to_odoo(data)
+        #     qty += len(data)
+
         print("Number of products activity done")
+        log_data = {
+            "Результат": f"Обновлены данные о количестве продуктов по продуктам: {qty}"
+        }
+        return log_data

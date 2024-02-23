@@ -298,9 +298,9 @@ async def activity_write_ozon_actions_to_odoo() -> None:
         raise requests.exceptions.RequestException()
 
 @activity.defn
-@odoo_log({'name': 'Импорт продуктов из Озон API в файл'})
-async def activity_ozon_analysis_data_activity() -> None:
-    OzonAnalysisData().main()
+@odoo_log({'name': 'Импорт данных по интересу к товарам'})
+async def activity_ozon_analysis_data_activity() -> dict:
+    return OzonAnalysisData().main()
 
 @activity.defn
 @odoo_log({'name': 'Импорт количества продуктов'})
