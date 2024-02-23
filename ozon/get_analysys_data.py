@@ -96,10 +96,14 @@ class OzonAnalysisData(AuthOdoo):
                 break
 
         records_qty = sum(self.counter.values())
+        res_list = [f"{len(self.counter)} из {(date_to - date_from).days + 1} дней импортировано. "
+                    f"Всего {records_qty} записей\n", ]
+        for date, qty in self.counter.items():
+            res_list.append(f"{date}: {qty} записей\n")
+        res = ''.join(res_list)
         log_data = {
             "Начало периода": date_from.strftime("%d.%m.%Y"),
             "Конец периода": date_to.strftime("%d.%m.%Y"),
-            "Результат": f"{len(self.counter)} из {(date_to - date_from).days} дней импортировано. "
-                         f"Всего {records_qty} записей"
+            "Результат": res
         }
         return log_data
