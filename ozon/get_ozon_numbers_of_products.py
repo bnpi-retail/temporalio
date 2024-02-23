@@ -49,7 +49,7 @@ class OzonNumberOfProducts(AuthOdoo):
         
         return json_response['result']
 
-    def treatment(self, data: list) -> None:
+    def treatment(self, data: list) -> dict:
         products = {}
 
         for product in data:
@@ -81,9 +81,17 @@ class OzonNumberOfProducts(AuthOdoo):
     def main(self):
         all_skus = self.get_skus()
         chunks = self.create_chunks(all_skus)
+        qty = 0
 
         for skus in chunks:
             data = self.requests_ozon(skus)
             data = self.treatment(data)
             self.send_to_odoo(data)
+
+            qty += len(data)
+
         print("Number of products activity done")
+        log_data = {
+            "Результат": f"Обновлены данные о количестве продуктов для количества продуктов: {qty}"
+        }
+        return log_data

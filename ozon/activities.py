@@ -1,9 +1,10 @@
 import os
+import requests
 import subprocess
 from os import getenv
 from datetime import datetime, time, timedelta
 
-import requests
+from tools import odoo_log
 from dotenv import load_dotenv
 from temporalio import activity
 
@@ -43,10 +44,12 @@ ACTIONS_PATH = getenv("ACTIONS_PATH")
 
 
 @activity.defn
-async def activity_import_products() -> None:
-    import_products_from_ozon_api_to_file(PRODUCTS_PATH)
+@odoo_log({'name': 'Импорт продуктов из Озон API в файл'})
+async def activity_import_products() -> dict:
+    return import_products_from_ozon_api_to_file(PRODUCTS_PATH)
 
 @activity.defn
+@odoo_log({'name': 'Импорт Продуктов из файла в odoo'})
 async def activity_write_products_to_odoo() -> None:
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
     divide_csv_into_chunks(PRODUCTS_PATH)
@@ -62,6 +65,7 @@ async def activity_write_products_to_odoo() -> None:
                 raise requests.exceptions.RequestException()
 
 @activity.defn
+@odoo_log({'name': 'Импорт Транзакций из Озон API в файл'})
 async def activity_import_transactions() -> None:
     date_from = convert_datetime_str_to_ozon_date(
         str(datetime.combine(datetime.now(), time.min) - timedelta(days=1))
@@ -76,6 +80,7 @@ async def activity_import_transactions() -> None:
         )
 
 @activity.defn
+@odoo_log({'name': 'Импорт Транзакций за предыдущий месяц из Озон API в файл'})
 async def activity_import_transactions_from_prev_month() -> None:
     date_from = convert_datetime_str_to_ozon_date(
         str(datetime.combine(datetime.now(), time.min) - timedelta(days=30))
@@ -90,6 +95,7 @@ async def activity_import_transactions_from_prev_month() -> None:
         )
 
 @activity.defn
+@odoo_log({'name': 'Импорт транзакций за 2 года из Озон API в файл'})
 async def activity_import_transactions_from_prev_2_years() -> None:
     date_from = datetime.combine(datetime.now(), time.min) - timedelta(days=730)
     string_date_from = convert_datetime_str_to_ozon_date(str(date_from))
@@ -115,6 +121,7 @@ async def activity_import_transactions_from_prev_2_years() -> None:
         string_date_to = convert_datetime_str_to_ozon_date(str(date_to))
 
 @activity.defn
+@odoo_log({'name': 'Импорт Транзакций из файла в odoo'})
 async def activity_write_transactions_to_odoo() -> None:
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
     divide_csv_into_chunks(TRANSACTIONS_PATH)
@@ -130,10 +137,12 @@ async def activity_write_transactions_to_odoo() -> None:
                 raise requests.exceptions.RequestException()
 
 @activity.defn
+@odoo_log({'name': 'Импорт Остатков из Озон API в файл'})
 async def activity_import_stocks() -> None:
     import_stocks_from_ozon_api_to_file(STOCKS_PATH)
 
 @activity.defn
+@odoo_log({'name': 'Импорт Остатков из файла в odoo'})
 async def activity_write_stocks_to_odoo() -> None:
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
     divide_csv_into_chunks(STOCKS_PATH)
@@ -149,10 +158,12 @@ async def activity_write_stocks_to_odoo() -> None:
                 raise requests.exceptions.RequestException()
 
 @activity.defn
+@odoo_log({'name': 'Удаление файлов'})
 async def activity_remove_csv_files() -> None:
     remove_all_csv_files()
 
 @activity.defn
+@odoo_log({'name': 'Запуск скрипта в odoo для расчета коэффициентов и групп продуктов'})
 async def activity_compute_products_coefs_and_groups() -> None:
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
     url = "http://0.0.0.0:8070/compute/products_coefs_and_groups"
@@ -164,6 +175,7 @@ async def activity_compute_products_coefs_and_groups() -> None:
     print(response.text)
 
 @activity.defn
+@odoo_log({'name': 'Запуск скрипта в odoo для расчета процентных расходов'})
 async def activity_compute_products_percent_expenses() -> None:
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
     url = "http://0.0.0.0:8070/compute/products_percent_expenses"
@@ -173,6 +185,7 @@ async def activity_compute_products_percent_expenses() -> None:
     print("Products percent expenses computation launched.")
 
 @activity.defn
+@odoo_log({'name': 'Запуск скрипта в odoo для расчета всех расходов'})
 async def activity_compute_products_all_expenses() -> None:
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
     url = "http://0.0.0.0:8070/compute/products_all_expenses"
@@ -184,6 +197,7 @@ async def activity_compute_products_all_expenses() -> None:
     print(response.text)
 
 @activity.defn
+@odoo_log({'name': 'Создание ежедневных задач'})
 async def activity_create_daily_tasks() -> None:
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
     url = "http://0.0.0.0:8070/tasks/create_daily_tasks"
@@ -195,10 +209,12 @@ async def activity_create_daily_tasks() -> None:
     print(response.text)
 
 @activity.defn
+@odoo_log({'name': 'Импорт Цен из Озон API в файл'})
 async def activity_import_prices() -> None:
     import_prices_from_ozon_api_to_file(PRICES_PATH)
 
 @activity.defn
+@odoo_log({'name': 'Импорт Цен из файла в odoo'})
 async def activity_write_prices_to_odoo() -> None:
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
     divide_csv_into_chunks(PRICES_PATH)
@@ -214,6 +230,7 @@ async def activity_write_prices_to_odoo() -> None:
                 raise requests.exceptions.RequestException()
 
 @activity.defn
+@odoo_log({'name': 'Импорт Отправлений из Озон API в файл'})
 async def activity_import_postings() -> None:
     date_from = convert_datetime_str_to_ozon_date(
         str(datetime.combine(datetime.now(), time.min) - timedelta(days=1))
@@ -227,6 +244,7 @@ async def activity_import_postings() -> None:
     )
 
 @activity.defn
+@odoo_log({'name': 'Импорт Отправлений из файла в odoo'})
 async def activity_write_postings_to_odoo() -> None:
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
     divide_csv_into_chunks(POSTINGS_PATH)
@@ -242,10 +260,12 @@ async def activity_write_postings_to_odoo() -> None:
                 raise requests.exceptions.RequestException()
 
 @activity.defn
+@odoo_log({'name': 'Импорт Заказов на поставку из Озон API в файл'})
 async def activity_import_fbo_supply_orders() -> None:
     import_fbo_supply_orders_from_ozon_api_to_file(FBO_SUPPLY_ORDERS_PATH)
 
 @activity.defn
+@odoo_log({'name': 'Импорт Заказов на поставку из файла в odoo'})
 async def activity_write_fbo_supply_orders_to_odoo() -> None:
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
     divide_csv_into_chunks(FBO_SUPPLY_ORDERS_PATH)
@@ -261,10 +281,12 @@ async def activity_write_fbo_supply_orders_to_odoo() -> None:
                 raise requests.exceptions.RequestException()
 
 @activity.defn
+@odoo_log({'name': 'Импорт Акций из Озон API в файл'})
 async def activity_import_ozon_actions() -> None:
     import_actions_from_ozon_api_to_file(ACTIONS_PATH)
 
 @activity.defn
+@odoo_log({'name': 'Импорт Акций из файла в odoo'})
 async def activity_write_ozon_actions_to_odoo() -> None:
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
     url = "http://0.0.0.0:8070/import/ozon_actions"
@@ -276,9 +298,11 @@ async def activity_write_ozon_actions_to_odoo() -> None:
         raise requests.exceptions.RequestException()
 
 @activity.defn
-async def activity_ozon_analysis_data_activity() -> None:
-    OzonAnalysisData().main()
+@odoo_log({'name': 'Импорт данных по интересу к товарам'})
+async def activity_ozon_analysis_data_activity() -> dict:
+    return OzonAnalysisData().main()
 
 @activity.defn
-async def activity_get_ozon_number_of_products() -> None:
-    OzonNumberOfProducts().main()
+@odoo_log({'name': 'Импорт количества продуктов'})
+async def activity_get_ozon_number_of_products() -> dict:
+    return OzonNumberOfProducts().main()
