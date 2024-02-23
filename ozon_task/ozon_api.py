@@ -1,8 +1,8 @@
 import csv
 import json
-from collections import defaultdict
 from itertools import groupby
 from operator import itemgetter
+from datetime import datetime, timedelta
 import os
 from time import sleep
 import requests
@@ -20,7 +20,6 @@ session_id = authenticate_to_odoo(USERNAME, PASSWORD)
 settings = get_settings_credentials(session_id)
 OZON_API_KEY = settings.get("OZON_API_KEY")
 
-
 if not OZON_CLIENT_ID or not OZON_API_KEY:
     raise ValueError("Env variables $OZON_CLIENT_ID and $OZON_API_KEY weren't found")
 
@@ -36,7 +35,6 @@ attributes_ids = {
     "name": 4180,
     "description": 4191,
 }
-
 
 ALL_COMMISSIONS = {
     "acquiring": "Максимальная комиссия за эквайринг",
@@ -86,7 +84,16 @@ FBS_FIX_COMMISSIONS = {
 FBS_PERCENT_COMMISSIONS = {
     "sales_percent_fbs": "Процент комиссии за продажу (FBS)",
 }
-OPERATION_TYPES = {
+TRANSACTIONS_TYPES = {
+    "all": "все",
+    "orders": "заказы",
+    "returns": "возвраты и отмены",
+    "services": "сервисные сборы",
+    "compensation": "компенсация",
+    "transferDelivery": "стоимость доставки",
+    "other": "прочее",
+}
+SERVICES_TYPES = {
     "MarketplaceNotDeliveredCostItem": "возврат невостребованного товара от покупателя на склад",
     "MarketplaceReturnAfterDeliveryCostItem": "возврат от покупателя на склад после доставки",
     "MarketplaceDeliveryCostItem": "доставка товара до покупателя",
@@ -284,28 +291,12 @@ def get_product_sku_from_product_info_list(product_info_list: list) -> dict:
         }
     return skus
 
-
-# def get_categories() -> dict:
-#     response = requests.post(
-#         "https://api-seller.ozon.ru/v1/description-category/tree",
-#         headers=headers,
-#         data=json.dumps(
-#             {
-#                 "language": "RU"
-#             }
-#         ),
-#     )
-#     response = response.json()["result"]
-#     categories_dict = defaultdict()
-#     for categories_first_level in response:
-#         for categories_second_level in categories_first_level['children']:
-#             description_category_id = categories_second_level['description_category_id']
-#             category_name = categories_second_level['category_name']
-#             categories_dict[description_category_id] = category_name
-#
-#     print(categories_dict)
-#     return categories_dict
-
+def get_categories_tree() -> list:
+    response = requests.post(
+        "https://api-seller.ozon.ru/v1/description-category/tree",
+        headers=headers)
+    response = response.json()["result"]
+    return response
 
 def get_product_attributes(product_ids: list, limit=1000) -> list:
     response = requests.post(
@@ -453,10 +444,10 @@ def import_comissions_by_categories_from_ozon_api_to_file(file_path: str):
 
 
 def get_transactions(
-    date_from: str = "2023-11-01T00:00:00.000Z",
-    date_to: str = "2023-12-01T00:00:00.000Z",
-    page=1,
-    page_size=1000,
+        date_from: str = "2023-11-01T00:00:00.000Z",
+        date_to: str = "2023-12-01T00:00:00.000Z",
+        page=1,
+        page_size=1000,
 ):
     result = requests.post(
         "https://api-seller.ozon.ru/v3/finance/transaction/list",
@@ -491,13 +482,21 @@ def get_transactions(
 
 
 def import_transactions_from_ozon_api_to_file(
-    file_path: str, date_from: str, date_to: str, next_page=1
+        file_path: str, date_from: str, date_to: str, next_page=1
 ):
+    """
+    accruals_for_sale - Стоимость товаров с учётом скидок продавца
+    sale_commission - Комиссия за продажу или возврат комиссии за продажу
+    amount - Итоговая сумма операции (стоимость - комиссия - стоимость доп.услуг)
+    """
     fieldnames = [
         "transaction_id",
         "transaction_date",
         "order_date",
         "name",
+        "accruals_for_sale",
+        "sale_commission",
+        "type",
         "amount",
         "product_skus",
         "services",
@@ -527,13 +526,15 @@ def import_transactions_from_ozon_api_to_file(
             transaction_date = oper["operation_date"]
             order_date = oper["posting"]["order_date"]
             name = oper["operation_type_name"]
+            accruals_for_sale = oper["accruals_for_sale"]
+            sale_commission = oper["sale_commission"]
+            transaction_type = TRANSACTIONS_TYPES.get(oper["type"], oper["type"])
             amount = oper["amount"]
             product_skus = [i["sku"] for i in oper["items"]]
 
             services = []
             for service in oper["services"]:
-                sn = OPERATION_TYPES.get(service["name"])
-                service_name = sn if sn else service["name"]
+                service_name = SERVICES_TYPES.get(service["name"], service["name"])
                 service_price = service["price"]
                 services.append((service_name, service_price))
 
@@ -543,6 +544,9 @@ def import_transactions_from_ozon_api_to_file(
                 "transaction_date": transaction_date,
                 "order_date": order_date if order_date else transaction_date,
                 "name": name,
+                "accruals_for_sale": accruals_for_sale,
+                "sale_commission": sale_commission,
+                "type": transaction_type,
                 "amount": amount,
                 "product_skus": product_skus,
                 "services": services,
@@ -591,6 +595,22 @@ def get_image_urls_from_product_info_list(product_info_list: list) -> dict:
     return images
 
 
+def find_cat(l: list, cat_id, type_id):
+    for i in l:
+        if c_id := i.get("description_category_id"):
+            if c_id == cat_id:
+                for c in i["children"]:
+                    if c.get("type_id") == type_id:
+                        return i["category_name"], c["type_name"]
+            else:
+                category_name, type_name = find_cat(i["children"], cat_id, type_id)
+                if category_name:
+                    return category_name, type_name
+    return None, None
+
+def get_product_type_id_from_product_info_list(prod_info_list: list) -> dict:
+    return {i["id"]: i["type_id"] for i in prod_info_list}
+
 def import_products_from_ozon_api_to_file(file_path: str):
     fieldnames = [
         "id_on_platform",
@@ -611,6 +631,7 @@ def import_products_from_ozon_api_to_file(file_path: str):
         "weight",
         "seller_name",
         "trading_scheme",
+        "marketing_price",
         "price",
         "old_price",
         "ext_comp_min_price",
@@ -624,6 +645,8 @@ def import_products_from_ozon_api_to_file(file_path: str):
     limit = 1000
     last_id = ""
     products = ["" for _ in range(limit)]
+    cat_tree = get_categories_tree()
+    used_types = {}
     while len(products) == limit:
         products, last_id = get_product(limit=limit, last_id=last_id)
         prod_ids = get_product_id(products)
@@ -632,6 +655,7 @@ def import_products_from_ozon_api_to_file(file_path: str):
         products_price_info = get_product_prices(prod_ids, limit=limit)
         products_commissions = get_product_commissions(prod_ids, limit=limit)
         prod_info_list = get_product_info_list_by_product_id(prod_ids)
+        prod_type_ids = get_product_type_id_from_product_info_list(prod_info_list)
         products_imgs_urls = get_image_urls_from_product_info_list(prod_info_list)
         products_skus = get_product_sku_from_product_info_list(prod_info_list)
         products_rows = []
@@ -639,10 +663,7 @@ def import_products_from_ozon_api_to_file(file_path: str):
             id_on_platform = prod["id"]
             attrs = prod["attributes"]
             keywords = ''
-            category_name = ''
             for a in attrs:
-                if a["attribute_id"] == 9461:
-                    category_name = a["values"][0]["value"]
                 if a["attribute_id"] == 22387:
                     parent_category = a["values"][0]["value"]
                     full_categories_id = a["values"][0]["dictionary_value_id"]
@@ -651,11 +672,18 @@ def import_products_from_ozon_api_to_file(file_path: str):
                 if a["attribute_id"] == 22336:
                     keywords = a["values"][0]["value"]
             description_category_id = prod["description_category_id"]
+            type_id = prod_type_ids[id_on_platform]
+            if category_name := used_types.get(type_id):
+                pass         
+            else:
+                parent, category_name = find_cat(cat_tree, description_category_id, type_id)
+                used_types[type_id] = category_name
             offer_id = prod["offer_id"]
             name = prod["name"]
             dimensions = calculate_product_dimensions(prod)
             weight = calculate_product_weight_in_kg(prod)
             _price_info = products_price_info[id_on_platform]
+            marketing_price = _price_info["price"]["marketing_price"]
             price = _price_info["price"]["price"]
             old_price = _price_info["price"]["old_price"]
             ext_comp_min_price = _price_info["price_indexes"]["external_index_data"][
@@ -674,7 +702,6 @@ def import_products_from_ozon_api_to_file(file_path: str):
             fbo_sku = products_skus[id_on_platform]["fbo_sku"]
             fbs_sku = products_skus[id_on_platform]["fbs_sku"]
             imgs_urls = products_imgs_urls.get(id_on_platform)
-
             row = {
                 "id_on_platform": id_on_platform,
                 "offer_id": offer_id,
@@ -694,6 +721,7 @@ def import_products_from_ozon_api_to_file(file_path: str):
                 "weight": weight,
                 "seller_name": "Продавец",
                 "trading_scheme": trading_scheme,
+                "marketing_price": marketing_price,
                 "price": price,
                 "old_price": old_price,
                 "ext_comp_min_price": ext_comp_min_price,
@@ -776,12 +804,12 @@ def get_fbs_warehouses_stocks(skus: list) -> list:
 def split_list(l, n):
     """Splits list into n chunks"""
     k, m = divmod(len(l), n)
-    return (l[i * k + min(i, m) : (i + 1) * k + min(i + 1, m)] for i in range(n))
+    return (l[i * k + min(i, m): (i + 1) * k + min(i + 1, m)] for i in range(n))
 
 
 def split_list_into_chunks_of_size_n(l, n):
     for i in range(0, len(l), n):
-        yield l[i : i + n]
+        yield l[i: i + n]
 
 
 def import_stocks_from_ozon_api_to_file(file_path: str):
@@ -943,9 +971,9 @@ def get_postings_fbs(date_from: str, date_to: str, limit=1000, offset=0):
 
 
 def import_postings_from_ozon_api_to_file(
-    file_path: str,
-    date_from: str,
-    date_to: str,
+        file_path: str,
+        date_from: str,
+        date_to: str,
 ):
     """Import postings for both trading schemes FBS and FBO into csv file to upload in ozon.posting model"""
     fieldnames = [
@@ -1260,3 +1288,55 @@ def delete_products_from_action(action_id, product_ids: list):
     ).json()
 
     return response["result"]
+
+
+def get_monthly_sales_report(year_month: str):
+    """
+    year_month: "2024-01"
+    """
+    response = requests.post(
+        "https://api-seller.ozon.ru/v1/finance/realization",
+        headers=headers,
+        data=json.dumps({"date": year_month})).json()
+    if response.get("code"):
+        return response
+    return response["result"]
+
+
+def write_monthly_sales_report_to_json_file(file_path: str, year_month: str):
+    """
+    file_path: "*.json"
+    year_month: "2024-01"
+    """
+    data = get_monthly_sales_report(year_month)
+    if data.get("code"):
+        return data["message"]
+    with open(file_path, "w", newline="") as jsonfile:
+        json.dump(data, jsonfile)
+    return "OK"
+
+
+def get_previous_month(day) -> str:
+    """
+    If today 2023-04-xx returns: "2023-03"
+    """
+    if isinstance(day, str):
+        day = datetime.strptime(day, "%Y-%m")
+    first = day.replace(day=1)
+    prev_month = first - timedelta(days=1)
+    return prev_month.strftime("%Y-%m")
+
+
+def import_all_time_sales_reports():
+    year_month = datetime.today()
+    # отчет Озон за пред.месяц доступн после 5го числа текущего месяца
+    if year_month.day > 5:
+        pass
+    else:
+        year_month = year_month - timedelta(days=year_month.day + 1)
+
+    response = "OK"
+    while response == "OK":
+        year_month = get_previous_month(year_month)
+        response = write_monthly_sales_report_to_json_file(
+            file_path=f"{year_month}.json", year_month=year_month)

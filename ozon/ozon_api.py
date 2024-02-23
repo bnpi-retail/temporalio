@@ -291,6 +291,12 @@ def get_product_sku_from_product_info_list(product_info_list: list) -> dict:
         }
     return skus
 
+def get_categories_tree() -> list:
+    response = requests.post(
+        "https://api-seller.ozon.ru/v1/description-category/tree",
+        headers=headers)
+    response = response.json()["result"]
+    return response
 
 def get_product_attributes(product_ids: list, limit=1000) -> list:
     response = requests.post(
@@ -589,6 +595,22 @@ def get_image_urls_from_product_info_list(product_info_list: list) -> dict:
     return images
 
 
+def find_cat(l: list, cat_id, type_id):
+    for i in l:
+        if c_id := i.get("description_category_id"):
+            if c_id == cat_id:
+                for c in i["children"]:
+                    if c.get("type_id") == type_id:
+                        return i["category_name"], c["type_name"]
+            else:
+                category_name, type_name = find_cat(i["children"], cat_id, type_id)
+                if category_name:
+                    return category_name, type_name
+    return None, None
+
+def get_product_type_id_from_product_info_list(prod_info_list: list) -> dict:
+    return {i["id"]: i["type_id"] for i in prod_info_list}
+
 def import_products_from_ozon_api_to_file(file_path: str):
     fieldnames = [
         "id_on_platform",
@@ -609,6 +631,7 @@ def import_products_from_ozon_api_to_file(file_path: str):
         "weight",
         "seller_name",
         "trading_scheme",
+        "marketing_price",
         "price",
         "old_price",
         "ext_comp_min_price",
@@ -622,6 +645,8 @@ def import_products_from_ozon_api_to_file(file_path: str):
     limit = 1000
     last_id = ""
     products = ["" for _ in range(limit)]
+    cat_tree = get_categories_tree()
+    used_types = {}
     while len(products) == limit:
         products, last_id = get_product(limit=limit, last_id=last_id)
         prod_ids = get_product_id(products)
@@ -630,29 +655,35 @@ def import_products_from_ozon_api_to_file(file_path: str):
         products_price_info = get_product_prices(prod_ids, limit=limit)
         products_commissions = get_product_commissions(prod_ids, limit=limit)
         prod_info_list = get_product_info_list_by_product_id(prod_ids)
+        prod_type_ids = get_product_type_id_from_product_info_list(prod_info_list)
         products_imgs_urls = get_image_urls_from_product_info_list(prod_info_list)
         products_skus = get_product_sku_from_product_info_list(prod_info_list)
         products_rows = []
         for prod in products_attrs:
             id_on_platform = prod["id"]
-            category_name = ''
+            attrs = prod["attributes"]
             keywords = ''
-            for attr in prod["attributes"]:
-                if attr["attribute_id"] == 9461:
-                    category_name = attr["values"][0]["value"]
-                if attr["attribute_id"] == 22387:
-                    parent_category = attr["values"][0]["value"]
-                    full_categories_id = attr["values"][0]["dictionary_value_id"]
-                if attr["attribute_id"] == 4191:
-                    description = attr["values"][0]["value"]
-                if attr["attribute_id"] == 22336:
-                    keywords = attr["values"][0]["value"]
+            for a in attrs:
+                if a["attribute_id"] == 22387:
+                    parent_category = a["values"][0]["value"]
+                    full_categories_id = a["values"][0]["dictionary_value_id"]
+                if a["attribute_id"] == 4191:
+                    description = a["values"][0]["value"]
+                if a["attribute_id"] == 22336:
+                    keywords = a["values"][0]["value"]
             description_category_id = prod["description_category_id"]
+            type_id = prod_type_ids[id_on_platform]
+            if category_name := used_types.get(type_id):
+                pass         
+            else:
+                parent, category_name = find_cat(cat_tree, description_category_id, type_id)
+                used_types[type_id] = category_name
             offer_id = prod["offer_id"]
             name = prod["name"]
             dimensions = calculate_product_dimensions(prod)
             weight = calculate_product_weight_in_kg(prod)
             _price_info = products_price_info[id_on_platform]
+            marketing_price = _price_info["price"]["marketing_price"]
             price = _price_info["price"]["price"]
             old_price = _price_info["price"]["old_price"]
             ext_comp_min_price = _price_info["price_indexes"]["external_index_data"][
@@ -671,7 +702,6 @@ def import_products_from_ozon_api_to_file(file_path: str):
             fbo_sku = products_skus[id_on_platform]["fbo_sku"]
             fbs_sku = products_skus[id_on_platform]["fbs_sku"]
             imgs_urls = products_imgs_urls.get(id_on_platform)
-
             row = {
                 "id_on_platform": id_on_platform,
                 "offer_id": offer_id,
@@ -691,6 +721,7 @@ def import_products_from_ozon_api_to_file(file_path: str):
                 "weight": weight,
                 "seller_name": "Продавец",
                 "trading_scheme": trading_scheme,
+                "marketing_price": marketing_price,
                 "price": price,
                 "old_price": old_price,
                 "ext_comp_min_price": ext_comp_min_price,
