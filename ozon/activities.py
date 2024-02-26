@@ -44,9 +44,8 @@ ACTIONS_PATH = getenv("ACTIONS_PATH")
 
 
 @activity.defn
-@odoo_log({'name': 'Импорт продуктов из Озон API в файл'})
-async def activity_import_products() -> dict:
-    return import_products_from_ozon_api_to_file(PRODUCTS_PATH)
+async def activity_import_products() -> None:
+    import_products_from_ozon_api_to_file(PRODUCTS_PATH)
 
 @activity.defn
 @odoo_log({'name': 'Импорт Продуктов из файла в odoo'})
@@ -63,6 +62,7 @@ async def activity_write_products_to_odoo() -> None:
             if response.status_code != 200:
                 print("activity_write_products_to_odoo error. Traceback in odoo log")
                 raise requests.exceptions.RequestException()
+            break
 
 @activity.defn
 @odoo_log({'name': 'Импорт Транзакций из Озон API в файл'})

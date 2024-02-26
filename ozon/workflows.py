@@ -58,11 +58,11 @@ class OzonProductsWorkflow:
         #     retry_policy=RetryPolicy(maximum_interval=timedelta(days=24)),
         # )
 
-        # await workflow.execute_activity(
-        #     activity_write_products_to_odoo,
-        #     start_to_close_timeout=timedelta(days=start_to_close_timeout),
-        #     retry_policy=RetryPolicy(maximum_interval=timedelta(days=24)),
-        # )
+        await workflow.execute_activity(
+            activity_write_products_to_odoo,
+            start_to_close_timeout=timedelta(days=start_to_close_timeout),
+            retry_policy=RetryPolicy(maximum_interval=timedelta(days=24)),
+        )
 
         # await workflow.execute_activity(
         #     activity_remove_csv_files,

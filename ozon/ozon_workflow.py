@@ -28,10 +28,10 @@ class GeneralOzonWorkflow:
             id="ozon-create-mass-data-import-child-workflow-id",
         )
 
-        # await workflow.execute_child_workflow(
-        #     OzonProductsWorkflow.run,
-        #     id="ozon-import-products-child-workflow-id",
-        # )
+        await workflow.execute_child_workflow(
+            OzonProductsWorkflow.run,
+            id="ozon-import-products-child-workflow-id",
+        )
 
         # await workflow.execute_child_workflow(
         #     OzonFboSupplyOrdersWorkflow.run,
