@@ -171,7 +171,7 @@ async def activity_remove_csv_files() -> None:
 
 @activity.defn
 @odoo_log({'name': 'Запуск скрипта в odoo для расчета коэффициентов и групп продуктов'})
-async def activity_compute_products_coefs_and_groups() -> None:
+async def activity_compute_products_coefs_and_groups() -> dict:
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
     url = "http://0.0.0.0:8070/compute/products_coefs_and_groups"
     headers = {"Cookie": f"session_id={session_id}"}
@@ -180,20 +180,22 @@ async def activity_compute_products_coefs_and_groups() -> None:
         print("activity_compute_products_coefs_and_groups error. Traceback in odoo log")
         raise requests.exceptions.RequestException()
     print(response.text)
+    return {'Результат': 'Коэффициенты и группы продуктов рассчитаны'}
 
 @activity.defn
 @odoo_log({'name': 'Запуск скрипта в odoo для расчета процентных расходов'})
-async def activity_compute_products_percent_expenses() -> None:
+async def activity_compute_products_percent_expenses() -> dict:
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
     url = "http://0.0.0.0:8070/compute/products_percent_expenses"
     subprocess.Popen(
         ["curl", "-X", "POST", "-H", f"Cookie: session_id={session_id}", url, "&"]
     )
     print("Products percent expenses computation launched.")
+    return {'Результат': 'Процентные расходы продуктов рассчитаны'}
 
 @activity.defn
 @odoo_log({'name': 'Запуск скрипта в odoo для расчета всех расходов'})
-async def activity_compute_products_all_expenses() -> None:
+async def activity_compute_products_all_expenses() -> dict:
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
     url = "http://0.0.0.0:8070/compute/products_all_expenses"
     headers = {"Cookie": f"session_id={session_id}"}
@@ -201,11 +203,12 @@ async def activity_compute_products_all_expenses() -> None:
     if response.status_code != 200:
         print("activity_compute_products_all_expenses error. Traceback in odoo log")
         raise requests.exceptions.RequestException()
-    print(response.text)
+    print(response.json())
+    return {'Результат': 'Расчет всех издержек произведен'}
 
 @activity.defn
 @odoo_log({'name': 'Создание ежедневных задач'})
-async def activity_create_daily_tasks() -> None:
+async def activity_create_daily_tasks() -> dict:
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
     url = "http://0.0.0.0:8070/tasks/create_daily_tasks"
     headers = {"Cookie": f"session_id={session_id}"}
@@ -213,19 +216,20 @@ async def activity_create_daily_tasks() -> None:
     if response.status_code != 200:
         print("activity_create_daily_tasks error. Traceback in odoo log")
         raise requests.exceptions.RequestException()
-    print(response.text)
+    print(response.json())
+    return response.json()
 
 @activity.defn
-@odoo_log({'name': 'Импорт Цен из Озон API в файл'})
 async def activity_import_prices() -> None:
     import_prices_from_ozon_api_to_file(PRICES_PATH)
 
 @activity.defn
-@odoo_log({'name': 'Импорт Цен из файла в odoo'})
-async def activity_write_prices_to_odoo() -> None:
+@odoo_log({'name': 'Импорт Цен'})
+async def activity_write_prices_to_odoo() -> dict:
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
     divide_csv_into_chunks(PRICES_PATH)
     url = "http://0.0.0.0:8070/import/prices_from_ozon_api_to_file"
+    log_data = {}
 
     for fpath in os.listdir():
         if fpath.startswith("chunk"):
@@ -235,9 +239,11 @@ async def activity_write_prices_to_odoo() -> None:
             if response.status_code != 200:
                 print("activity_write_prices_to_odoo error. Traceback in odoo log")
                 raise requests.exceptions.RequestException()
+            update_activity_log_data(log_data, response.json())
+
+    return log_data
 
 @activity.defn
-@odoo_log({'name': 'Импорт Отправлений из Озон API в файл'})
 async def activity_import_postings() -> None:
     date_from = convert_datetime_str_to_ozon_date(
         str(datetime.combine(datetime.now(), time.min) - timedelta(days=1))
@@ -251,11 +257,12 @@ async def activity_import_postings() -> None:
     )
 
 @activity.defn
-@odoo_log({'name': 'Импорт Отправлений из файла в odoo'})
-async def activity_write_postings_to_odoo() -> None:
+@odoo_log({'name': 'Импорт Отправлений'})
+async def activity_write_postings_to_odoo() -> dict:
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
     divide_csv_into_chunks(POSTINGS_PATH)
     url = "http://0.0.0.0:8070/import/postings_from_ozon_api_to_file"
+    log_data = {}
 
     for fpath in os.listdir():
         if fpath.startswith("chunk"):
@@ -265,9 +272,11 @@ async def activity_write_postings_to_odoo() -> None:
             if response.status_code != 200:
                 print("activity_import_postings error. Traceback in odoo log")
                 raise requests.exceptions.RequestException()
+            update_activity_log_data(log_data, response.json())
+
+    return log_data
 
 @activity.defn
-@odoo_log({'name': 'Импорт Заказов на поставку из Озон API в файл'})
 async def activity_import_fbo_supply_orders() -> None:
     import_fbo_supply_orders_from_ozon_api_to_file(FBO_SUPPLY_ORDERS_PATH)
 
