@@ -20,6 +20,7 @@ with workflow.unsafe.imports_passed_through():
         OzonPricesWorkflow,
         OzonAnalysisWorkflow,
         OzonNumberOfProductsWorkflow,
+        CreateMassDataImportWorkflow,
     )
     from activities import (
         activity_compute_products_all_expenses,
@@ -45,6 +46,7 @@ with workflow.unsafe.imports_passed_through():
         activity_write_transactions_to_odoo,
         activity_ozon_analysis_data_activity,
         activity_get_ozon_number_of_products,
+        activity_create_mass_data_import
     )
 
 
@@ -72,6 +74,7 @@ async def main():
             OzonPricesWorkflow,
             OzonAnalysisWorkflow,
             OzonNumberOfProductsWorkflow,
+            CreateMassDataImportWorkflow,
         ],
         activities = [
             activity_compute_products_all_expenses,
@@ -96,7 +99,8 @@ async def main():
             activity_write_stocks_to_odoo,
             activity_write_transactions_to_odoo,
             activity_ozon_analysis_data_activity,
-            activity_get_ozon_number_of_products
+            activity_get_ozon_number_of_products,
+            activity_create_mass_data_import
         ],
     ):
 

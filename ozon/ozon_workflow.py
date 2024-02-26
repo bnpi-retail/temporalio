@@ -15,6 +15,7 @@ with workflow.unsafe.imports_passed_through():
         OzonPricesWorkflow,
         OzonAnalysisWorkflow,
         OzonNumberOfProductsWorkflow,
+        CreateMassDataImportWorkflow,
     )
 
 
@@ -22,6 +23,11 @@ with workflow.unsafe.imports_passed_through():
 class GeneralOzonWorkflow:
     @workflow.run
     async def run(self) -> None:
+        await workflow.execute_child_workflow(
+            CreateMassDataImportWorkflow.run,
+            id="ozon-create-mass-data-import-child-workflow-id",
+        )
+
         await workflow.execute_child_workflow(
             OzonProductsWorkflow.run,
             id="ozon-import-products-child-workflow-id",

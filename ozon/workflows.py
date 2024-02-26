@@ -27,14 +27,29 @@ with workflow.unsafe.imports_passed_through():
         activity_write_transactions_to_odoo,
         activity_ozon_analysis_data_activity,
         activity_get_ozon_number_of_products,
+        activity_create_mass_data_import,
     )
+
+
+@workflow.defn
+class CreateMassDataImportWorkflow:
+    @workflow.run
+    async def run(self) -> None:
+
+        start_to_close_timeout = 2
+
+        await workflow.execute_activity(
+            activity_create_mass_data_import,
+            start_to_close_timeout=timedelta(days=start_to_close_timeout),
+            retry_policy=RetryPolicy(maximum_interval=timedelta(days=24)),
+        )
 
 
 @workflow.defn
 class OzonProductsWorkflow:
     @workflow.run
     async def run(self) -> None:
-
+        pass
         start_to_close_timeout = 2
 
         await workflow.execute_activity(
