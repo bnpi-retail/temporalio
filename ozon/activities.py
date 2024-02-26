@@ -281,11 +281,12 @@ async def activity_import_fbo_supply_orders() -> None:
     import_fbo_supply_orders_from_ozon_api_to_file(FBO_SUPPLY_ORDERS_PATH)
 
 @activity.defn
-@odoo_log({'name': 'Импорт Заказов на поставку из файла в odoo'})
-async def activity_write_fbo_supply_orders_to_odoo() -> None:
+@odoo_log({'name': 'Импорт Заказов на поставку'})
+async def activity_write_fbo_supply_orders_to_odoo() -> dict:
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
     divide_csv_into_chunks(FBO_SUPPLY_ORDERS_PATH)
     url = "http://0.0.0.0:8070/import/fbo_supply_orders_from_ozon_api_to_file"
+    log_data = {}
 
     for fpath in os.listdir():
         if fpath.startswith("chunk"):
@@ -295,15 +296,17 @@ async def activity_write_fbo_supply_orders_to_odoo() -> None:
             if response.status_code != 200:
                 print("activity_write_fbo_supply_orders_to_odoo error. Traceback in odoo log")
                 raise requests.exceptions.RequestException()
+            update_activity_log_data(log_data, response.json())
+
+    return log_data
 
 @activity.defn
-@odoo_log({'name': 'Импорт Акций из Озон API в файл'})
 async def activity_import_ozon_actions() -> None:
     import_actions_from_ozon_api_to_file(ACTIONS_PATH)
 
 @activity.defn
-@odoo_log({'name': 'Импорт Акций из файла в odoo'})
-async def activity_write_ozon_actions_to_odoo() -> None:
+@odoo_log({'name': 'Импорт Акций'})
+async def activity_write_ozon_actions_to_odoo() -> dict:
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
     url = "http://0.0.0.0:8070/import/ozon_actions"
     response = send_csv_file_to_ozon_import_file(
@@ -312,9 +315,12 @@ async def activity_write_ozon_actions_to_odoo() -> None:
     if response.status_code != 200:
         print("activity_write_fbo_supply_orders_to_odoo error. Traceback in odoo log")
         raise requests.exceptions.RequestException()
+    log_data = response.json()
+
+    return log_data
 
 @activity.defn
-@odoo_log({'name': 'Импорт данных по интересу к товарам'})
+@odoo_log({'name': 'Импорт данных по интересу к продуктам'})
 async def activity_ozon_analysis_data_activity() -> dict:
     return OzonAnalysisData().main()
 
