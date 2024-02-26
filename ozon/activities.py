@@ -139,20 +139,19 @@ async def activity_write_transactions_to_odoo() -> dict:
                 raise requests.exceptions.RequestException()
             update_activity_log_data(log_data, response.json())
 
-    print(log_data)
     return log_data
 
 @activity.defn
-@odoo_log({'name': 'Импорт Остатков из Озон API в файл'})
 async def activity_import_stocks() -> None:
     import_stocks_from_ozon_api_to_file(STOCKS_PATH)
 
 @activity.defn
-@odoo_log({'name': 'Импорт Остатков из файла в odoo'})
-async def activity_write_stocks_to_odoo() -> None:
+@odoo_log({'name': 'Импорт Остатков'})
+async def activity_write_stocks_to_odoo() -> dict:
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
     divide_csv_into_chunks(STOCKS_PATH)
     url = "http://0.0.0.0:8070/import/stocks_from_ozon_api_to_file"
+    log_data = {}
 
     for fpath in os.listdir():
         if fpath.startswith("chunk"):
@@ -162,6 +161,9 @@ async def activity_write_stocks_to_odoo() -> None:
             if response.status_code != 200:
                 print("activity_write_stocks_to_odoo error. Traceback in odoo log")
                 raise requests.exceptions.RequestException()
+            update_activity_log_data(log_data, response.json())
+
+    return log_data
 
 @activity.defn
 async def activity_remove_csv_files() -> None:
