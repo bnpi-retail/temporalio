@@ -602,6 +602,7 @@ def find_cat(l: list, cat_id, type_id):
                 for c in i["children"]:
                     if c.get("type_id") == type_id:
                         return i["category_name"], c["type_name"]
+                return i["category_name"], None
             else:
                 category_name, type_name = find_cat(i["children"], cat_id, type_id)
                 if category_name:
@@ -708,8 +709,8 @@ def import_products_from_ozon_api_to_file(file_path: str):
                 "sku": sku,
                 "fbo_sku": fbo_sku,
                 "fbs_sku": fbs_sku,
-                "categories": category_name,
-                "description_category_id": description_category_id,
+                "categories": category_name if category_name else parent,
+                "description_category_id": type_id,
                 "full_categories": parent_category,
                 "full_categories_id": full_categories_id,
                 "name": name,
