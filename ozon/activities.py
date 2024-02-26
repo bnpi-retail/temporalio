@@ -4,7 +4,7 @@ import subprocess
 from os import getenv
 from datetime import datetime, time, timedelta
 
-from tools import odoo_log
+from tools import odoo_log, ImportLogging
 from dotenv import load_dotenv
 from temporalio import activity
 
@@ -306,3 +306,8 @@ async def activity_ozon_analysis_data_activity() -> dict:
 @odoo_log({'name': 'Импорт количества продуктов'})
 async def activity_get_ozon_number_of_products() -> dict:
     return OzonNumberOfProducts().main()
+
+@activity.defn
+async def activity_create_mass_data_import() -> None:
+    await ImportLogging().create_mass_data_import({'name': 'Главный поток'})
+
