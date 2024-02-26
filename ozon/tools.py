@@ -90,5 +90,9 @@ class ImportLogging(AuthOdoo):
             raise requests.exceptions.RequestException()
 
 
-class OzonApiActivityException(Exception):
-    pass
+def update_activity_log_data(data: dict, new_data: dict):
+    for key, value in new_data.items():
+        if data.get(key):
+            data[key] += value
+        else:
+            data[key] = value

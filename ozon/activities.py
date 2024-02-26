@@ -1,10 +1,11 @@
+import logging
 import os
 import requests
 import subprocess
 from os import getenv
 from datetime import datetime, time, timedelta
 
-from tools import odoo_log, ImportLogging
+from tools import odoo_log, ImportLogging, update_activity_log_data
 from dotenv import load_dotenv
 from temporalio import activity
 
@@ -48,11 +49,12 @@ async def activity_import_products() -> None:
     import_products_from_ozon_api_to_file(PRODUCTS_PATH)
 
 @activity.defn
-@odoo_log({'name': 'Импорт Продуктов из файла в odoo'})
-async def activity_write_products_to_odoo() -> None:
+@odoo_log({'name': 'Импорт Продуктов'})
+async def activity_write_products_to_odoo() -> dict:
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
     divide_csv_into_chunks(PRODUCTS_PATH)
     url = "http://0.0.0.0:8070/import/products_from_ozon_api_to_file"
+    log_data = {}
 
     for fpath in os.listdir():
         if fpath.startswith("chunk"):
@@ -62,7 +64,9 @@ async def activity_write_products_to_odoo() -> None:
             if response.status_code != 200:
                 print("activity_write_products_to_odoo error. Traceback in odoo log")
                 raise requests.exceptions.RequestException()
-            break
+            update_activity_log_data(log_data, response.json())
+
+    return log_data
 
 @activity.defn
 @odoo_log({'name': 'Импорт Транзакций из Озон API в файл'})
@@ -307,6 +311,7 @@ async def activity_ozon_analysis_data_activity() -> dict:
 async def activity_get_ozon_number_of_products() -> dict:
     return OzonNumberOfProducts().main()
 
+# if you want to change name, change also inside controllers' search
 @activity.defn
 async def activity_create_mass_data_import() -> None:
     await ImportLogging().create_mass_data_import({'name': 'Главный поток'})
