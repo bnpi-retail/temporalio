@@ -3,6 +3,10 @@ import asyncio
 from temporalio import workflow
 from temporalio.client import Client
 from temporalio.worker import Worker
+from temporalio.common import RetryPolicy
+from datetime import timedelta
+
+EXECUTION_TIMEOUT = timedelta(hours=6)
 
 with workflow.unsafe.imports_passed_through():
     from ozon_workflow import GeneralOzonWorkflow
@@ -108,6 +112,8 @@ async def main():
             GeneralOzonWorkflow.run,
             id=workflow_id,
             task_queue=task_queue,
+            execution_timeout=EXECUTION_TIMEOUT,
+            retry_policy=RetryPolicy(maximum_interval=timedelta(minutes=2)),
         )
 
 
