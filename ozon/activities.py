@@ -69,7 +69,6 @@ async def activity_write_products_to_odoo() -> dict:
     return log_data
 
 @activity.defn
-@odoo_log({'name': 'Импорт Транзакций из Озон API в файл'})
 async def activity_import_transactions() -> None:
     date_from = convert_datetime_str_to_ozon_date(
         str(datetime.combine(datetime.now(), time.min) - timedelta(days=1))
@@ -84,7 +83,6 @@ async def activity_import_transactions() -> None:
         )
 
 @activity.defn
-@odoo_log({'name': 'Импорт Транзакций за предыдущий месяц из Озон API в файл'})
 async def activity_import_transactions_from_prev_month() -> None:
     date_from = convert_datetime_str_to_ozon_date(
         str(datetime.combine(datetime.now(), time.min) - timedelta(days=30))
@@ -99,7 +97,6 @@ async def activity_import_transactions_from_prev_month() -> None:
         )
 
 @activity.defn
-@odoo_log({'name': 'Импорт транзакций за 2 года из Озон API в файл'})
 async def activity_import_transactions_from_prev_2_years() -> None:
     date_from = datetime.combine(datetime.now(), time.min) - timedelta(days=730)
     string_date_from = convert_datetime_str_to_ozon_date(str(date_from))
@@ -125,11 +122,12 @@ async def activity_import_transactions_from_prev_2_years() -> None:
         string_date_to = convert_datetime_str_to_ozon_date(str(date_to))
 
 @activity.defn
-@odoo_log({'name': 'Импорт Транзакций из файла в odoo'})
-async def activity_write_transactions_to_odoo() -> None:
+@odoo_log({'name': 'Импорт Транзакций'})
+async def activity_write_transactions_to_odoo() -> dict:
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
     divide_csv_into_chunks(TRANSACTIONS_PATH)
     url = "http://0.0.0.0:8070/import/transactions_from_ozon_api_to_file"
+    log_data = {}
 
     for fpath in os.listdir():
         if fpath.startswith("chunk"):
@@ -139,6 +137,10 @@ async def activity_write_transactions_to_odoo() -> None:
             if response.status_code != 200:
                 print("activity_write_transactions_to_odoo error. Traceback in odoo log")
                 raise requests.exceptions.RequestException()
+            update_activity_log_data(log_data, response.json())
+
+    print(log_data)
+    return log_data
 
 @activity.defn
 @odoo_log({'name': 'Импорт Остатков из Озон API в файл'})
@@ -162,7 +164,6 @@ async def activity_write_stocks_to_odoo() -> None:
                 raise requests.exceptions.RequestException()
 
 @activity.defn
-@odoo_log({'name': 'Удаление файлов'})
 async def activity_remove_csv_files() -> None:
     remove_all_csv_files()
 
