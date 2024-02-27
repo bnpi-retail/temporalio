@@ -332,5 +332,5 @@ async def activity_get_ozon_number_of_products() -> dict:
 # if you want to change name, change also inside controllers' search
 @activity.defn
 async def activity_create_mass_data_import() -> None:
-    await ImportLogging().create_mass_data_import({'name': 'Главный поток'})
+    await ImportLogging().create_mass_data_import({'name': 'Главный поток', 'logged_activities_qty': 10})
 

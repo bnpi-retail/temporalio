@@ -4,6 +4,7 @@ import json
 
 from datetime import datetime, timedelta
 from auth_odoo import AuthOdoo
+from tools import update_activity_log_data
 
 
 class PriceHistoryCompetitors(AuthOdoo):
@@ -75,7 +76,7 @@ class PriceHistoryCompetitors(AuthOdoo):
         print(data)
         response = requests.post(endpoint, headers=headers, data=data)
 
-        return response.text
+        return response
 
     def get_request_mpstats(self, sku: int) -> requests.Response:
         url = f"https://mpstats.io/api/oz/get/item/{sku}/sales"
@@ -133,7 +134,7 @@ class PriceHistoryCompetitors(AuthOdoo):
         )
         # data = json.loads(res)
         # count_sku = data['total_records']
-        count_sku = 2
+        # count_sku = 2
         print(count_sku)
 
         num_chunks = count_sku // self.chunk_size
@@ -168,12 +169,19 @@ class PriceHistoryCompetitors(AuthOdoo):
         return "Success!"
 
     def activity_two(self, dict_ads: dict):
+        log_data = {}
+        sku_qty = 0
         for sku, ads in dict_ads.items():
-            self.get_request_create_history_price(
+            response = self.get_request_create_history_price(
                 path="/api/v1/price_history_competitors/create_ads/",
                 history_prices=ads,
                 sku=sku,
             )
+            update_activity_log_data(log_data, response.json())
+            sku_qty += 1
+        log_data['Количество товаров конкурентов по которым получены данные'] = sku_qty
+
+        return log_data
 
 
 def main():
@@ -189,4 +197,6 @@ def activity_two():
     print(data_dict)
 
     model = PriceHistoryCompetitors()
-    model.activity_two(data_dict)
+    log_data = model.activity_two(data_dict)
+
+    return log_data

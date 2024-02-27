@@ -47,7 +47,11 @@ class ImportLogging(AuthOdoo):
     def __init__(self):
         super().__init__()
 
-    async def create_mass_data_import(self, data: dict) -> int | None:
+    async def create_mass_data_import(self, data: dict) -> None:
+        """
+        :param data: {'name': 'Главный поток', 'logged_activities_qty': 10}
+        :return:
+        """
         path = "/api/v1/mass-data-import"
         endpoint = f"{self.url}{path}"
         headers = self.connect_to_odoo_api_with_auth()
@@ -56,12 +60,6 @@ class ImportLogging(AuthOdoo):
 
         if response.status_code != 200:
             raise requests.exceptions.RequestException()
-
-        # response_res = response.json().get('result')
-        # if response_res:
-        #     import_id = response_res.get('import_id')
-
-            # return import_id
 
     async def create_mass_data_import_log(self, data: dict) -> int | None:
         path = "/api/v1/mass-data-import-log"

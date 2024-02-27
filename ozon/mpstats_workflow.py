@@ -1,6 +1,4 @@
 import asyncio
-import traceback
-import ast
 
 from datetime import timedelta
 from typing import NoReturn
@@ -15,7 +13,11 @@ with workflow.unsafe.imports_passed_through():
     from price_histry_competitors_mpstats import (
         activity_two as price_histry_competitors_activity_two,
     )
+    from tools import ImportLogging, odoo_log
 
+@activity.defn
+async def activity_create_mass_data_import() -> None:
+    await ImportLogging().create_mass_data_import({'name': 'MPstats импорт', 'logged_activities_qty': 1})
 
 @activity.defn
 async def mp_parsing_api_activity() -> NoReturn:
@@ -23,14 +25,21 @@ async def mp_parsing_api_activity() -> NoReturn:
 
 
 @activity.defn
-async def save_in_odoo_activity() -> NoReturn:
-    price_histry_competitors_activity_two()
+@odoo_log({'name': 'Импорт истории цен конкурентов'})
+async def save_in_odoo_activity() -> dict:
+    return price_histry_competitors_activity_two()
 
 
 @workflow.defn
 class MPStatsWorkflow:
     @workflow.run
     async def run(self) -> None:
+        await workflow.execute_activity(
+            activity_create_mass_data_import,
+            start_to_close_timeout=timedelta(minutes=5),
+            retry_policy=RetryPolicy(maximum_interval=timedelta(minutes=2)),
+        )
+
         await workflow.execute_activity(
             mp_parsing_api_activity,
             start_to_close_timeout=timedelta(minutes=60),
@@ -51,10 +60,8 @@ async def main():
         client,
         task_queue="MP-stats-task-queue",
         workflows=[MPStatsWorkflow],
-        activities=[mp_parsing_api_activity, save_in_odoo_activity],
+        activities=[mp_parsing_api_activity, save_in_odoo_activity, activity_create_mass_data_import],
     ):
-        pass
-
         await client.execute_workflow(
             MPStatsWorkflow.run,
             id="MPstats-workflow-id",
