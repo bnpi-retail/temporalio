@@ -50,6 +50,12 @@ class OzonProductsWorkflow:
     @workflow.run
     async def run(self) -> None:
         await workflow.execute_activity(
+            activity_remove_csv_files,
+            start_to_close_timeout=timedelta(minutes=1),
+            retry_policy=RetryPolicy(maximum_interval=timedelta(minutes=1)),
+        )
+
+        await workflow.execute_activity(
             activity_import_products,
             start_to_close_timeout=timedelta(minutes=30),
             retry_policy=RetryPolicy(maximum_interval=timedelta(minutes=1)),
