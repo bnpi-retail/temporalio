@@ -170,7 +170,7 @@ async def activity_remove_csv_files() -> None:
     remove_all_csv_files()
 
 @activity.defn
-@odoo_log({'name': 'Запуск скрипта в odoo для расчета коэффициентов и групп продуктов'})
+# @odoo_log({'name': 'Запуск скрипта в odoo для расчета коэффициентов и групп продуктов'})
 async def activity_compute_products_coefs_and_groups() -> dict:
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
     url = "http://0.0.0.0:8070/compute/products_coefs_and_groups"
@@ -183,7 +183,7 @@ async def activity_compute_products_coefs_and_groups() -> dict:
     return {'Результат': 'Коэффициенты и группы продуктов рассчитаны'}
 
 @activity.defn
-@odoo_log({'name': 'Запуск скрипта в odoo для расчета процентных расходов'})
+# @odoo_log({'name': 'Запуск скрипта в odoo для расчета процентных расходов'})
 async def activity_compute_products_percent_expenses() -> dict:
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
     url = "http://0.0.0.0:8070/compute/products_percent_expenses"
@@ -194,7 +194,7 @@ async def activity_compute_products_percent_expenses() -> dict:
     return {'Результат': 'Процентные расходы продуктов рассчитаны'}
 
 @activity.defn
-@odoo_log({'name': 'Запуск скрипта в odoo для расчета всех расходов'})
+# @odoo_log({'name': 'Запуск скрипта в odoo для расчета всех расходов'})
 async def activity_compute_products_all_expenses() -> dict:
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
     url = "http://0.0.0.0:8070/compute/products_all_expenses"
@@ -203,7 +203,7 @@ async def activity_compute_products_all_expenses() -> dict:
     if response.status_code != 200:
         print("activity_compute_products_all_expenses error. Traceback in odoo log")
         raise requests.exceptions.RequestException()
-    print(response.json())
+    print(response.text)
     return {'Результат': 'Расчет всех издержек произведен'}
 
 @activity.defn
