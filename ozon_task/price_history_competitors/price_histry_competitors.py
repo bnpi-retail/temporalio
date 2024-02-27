@@ -149,10 +149,10 @@ class PriceHistoryCompetitors:
         #     },
         # ]
 
-        if response.status_code != 200:
-            print(f"MP status: {response.status_code}")
-            raise ValueError(f"MP status: {response.status_code}")
-        return response.json()
+        if response.status_code == 200:
+            # print(f"MP status: {response.status_code}")
+            # raise ValueError(f"MP status: {response.status_code}")
+            return response.json()
 
     def main(self):
         count_sku = self.get_request_count_competitors(
