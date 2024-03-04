@@ -257,6 +257,19 @@ async def activity_import_postings() -> None:
     )
 
 @activity.defn
+async def activity_import_postings_40_days() -> None:
+    date_from = convert_datetime_str_to_ozon_date(
+        str(datetime.combine(datetime.now(), time.min) - timedelta(days=51))
+    )
+    date_to = convert_datetime_str_to_ozon_date(
+        str(datetime.combine(datetime.now(), time.max) - timedelta(days=10))
+    )
+
+    import_postings_from_ozon_api_to_file(
+        file_path=POSTINGS_PATH, date_from=date_from, date_to=date_to
+    )
+
+@activity.defn
 @odoo_log({'name': 'Импорт Отправлений'})
 async def activity_write_postings_to_odoo() -> dict:
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
