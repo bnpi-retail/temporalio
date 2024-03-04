@@ -983,7 +983,6 @@ def import_postings_from_ozon_api_to_file(
         "posting_number",
         "order_id",
         "status",
-        "skus",
         "region",
         "city",
         "warehouse_id",
@@ -1022,7 +1021,6 @@ def import_postings_from_ozon_api_to_file(
             # TODO: какие статусы брать?
             if status not in ["delivered", "cancelled"]:
                 continue
-            skus = [i["sku"] for i in posting["products"]]
             products = [{
                 "offer_id": product["offer_id"],
                 "price": product["price"],
@@ -1049,7 +1047,6 @@ def import_postings_from_ozon_api_to_file(
                 "posting_number": posting_number,
                 "order_id": order_id,
                 "status": status,
-                "skus": skus,
                 "region": region,
                 "city": city,
                 "warehouse_id": warehouse_id,
