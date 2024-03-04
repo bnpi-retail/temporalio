@@ -1062,6 +1062,8 @@ def import_postings_from_ozon_api_to_file(
                 writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
                 writer.writerow(row)
 
+        print(offset_fbo, offset_fbs)
+
     return "Successfully imported all postings!"
 
 
