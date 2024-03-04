@@ -39,6 +39,11 @@ class GeneralOzonWorkflow:
         )
 
         await workflow.execute_child_workflow(
+            OzonPostingsWorkflow.run,
+            id="ozon-postings-workflow-id",
+        )
+
+        await workflow.execute_child_workflow(
             OzonTransactionsWorkflow.run,
             id="ozon-transactions-workflow-id",
         )
@@ -46,11 +51,6 @@ class GeneralOzonWorkflow:
         await workflow.execute_child_workflow(
             OzonStocksWorkflow.run,
             id="ozon-stocks-workflow-id",
-        )
-
-        await workflow.execute_child_workflow(
-            OzonPostingsWorkflow.run,
-            id="ozon-postings-workflow-id",
         )
 
         await workflow.execute_child_workflow(
@@ -94,7 +94,5 @@ class GeneralOzonWorkflow:
             OzonComputeAllExpensesWorkflow.run,
             id="ozon-compute-all-expenses-workflow-id",
         )
-
-
 
         return

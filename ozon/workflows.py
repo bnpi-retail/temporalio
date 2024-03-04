@@ -205,7 +205,7 @@ class OzonTasksWorkflow:
     @workflow.run
     async def run(self) -> None:
 
-        start_to_close_timeout = 20
+        start_to_close_timeout = 40
 
         await workflow.execute_activity(
             activity_create_daily_tasks,
@@ -245,7 +245,7 @@ class OzonComputePercentExpensesWorkflow:
     @workflow.run
     async def run(self) -> None:
 
-        start_to_close_timeout = 50
+        start_to_close_timeout = 120
 
         await workflow.execute_activity(
             activity_compute_products_percent_expenses,
@@ -259,7 +259,7 @@ class OzonComputeCoefsAndGroupsWorkflow:
     @workflow.run
     async def run(self) -> None:
 
-        start_to_close_timeout = 60
+        start_to_close_timeout = 120
 
         await workflow.execute_activity(
             activity_compute_products_coefs_and_groups,
@@ -273,7 +273,7 @@ class OzonComputeAllExpensesWorkflow:
     @workflow.run
     async def run(self) -> None:
 
-        start_to_close_timeout = 60
+        start_to_close_timeout = 120
 
         await workflow.execute_activity(
             activity_compute_products_all_expenses,
