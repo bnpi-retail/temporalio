@@ -990,6 +990,7 @@ def import_postings_from_ozon_api_to_file(
         "warehouse_name",
         "cluster_from",
         "cluster_to",
+        "products",
     ]
     if not os.path.isfile(file_path):
         write_headers_to_csv(file_path, fieldnames)
@@ -1022,6 +1023,13 @@ def import_postings_from_ozon_api_to_file(
             if status not in ["delivered", "cancelled"]:
                 continue
             skus = [i["sku"] for i in posting["products"]]
+            products = [{
+                "offer_id": product["offer_id"],
+                "price": product["price"],
+                "quantity": product["quantity"],
+                "sku": product["sku"],
+            } for product in posting["products"]]
+
             if analytics_data := posting.get("analytics_data"):
                 region = analytics_data["region"]
                 city = analytics_data["city"]
@@ -1048,6 +1056,7 @@ def import_postings_from_ozon_api_to_file(
                 "warehouse_name": warehouse_name,
                 "cluster_from": cluster_from,
                 "cluster_to": cluster_to,
+                "products": products,
             }
             postings_rows.append(row)
 
