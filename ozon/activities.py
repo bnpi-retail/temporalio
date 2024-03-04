@@ -122,6 +122,20 @@ async def activity_import_transactions_from_prev_2_years() -> None:
         string_date_to = convert_datetime_str_to_ozon_date(str(date_to))
 
 @activity.defn
+async def activity_import_transactions_from_period() -> None:
+    date_from = convert_datetime_str_to_ozon_date(
+        str(datetime.combine(datetime.now(), time.min) - timedelta(days=30))
+    )
+    date_to = convert_datetime_str_to_ozon_date(
+        str(datetime.combine(datetime.now(), time.max) - timedelta(days=30))
+    )
+    next_page = 1
+    while next_page != "Successfully imported all transactions!":
+        next_page = import_transactions_from_ozon_api_to_file(
+            file_path=TRANSACTIONS_PATH, date_from=date_from, date_to=date_to
+        )
+
+@activity.defn
 @odoo_log({'name': 'Импорт Транзакций'})
 async def activity_write_transactions_to_odoo() -> dict:
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
@@ -259,10 +273,10 @@ async def activity_import_postings() -> None:
 @activity.defn
 async def activity_import_postings_40_days() -> None:
     date_from = convert_datetime_str_to_ozon_date(
-        str(datetime.combine(datetime.now(), time.min) - timedelta(days=51))
+        str(datetime.combine(datetime.now(), time.min) - timedelta(days=200))
     )
     date_to = convert_datetime_str_to_ozon_date(
-        str(datetime.combine(datetime.now(), time.max) - timedelta(days=10))
+        str(datetime.combine(datetime.now(), time.max) - timedelta(days=1))
     )
 
     import_postings_from_ozon_api_to_file(
