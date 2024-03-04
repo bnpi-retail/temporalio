@@ -3,6 +3,10 @@ import asyncio
 from temporalio import workflow
 from temporalio.client import Client
 from temporalio.worker import Worker
+from temporalio.common import RetryPolicy
+from datetime import timedelta
+
+EXECUTION_TIMEOUT = timedelta(hours=6)
 
 with workflow.unsafe.imports_passed_through():
     from ozon_workflow import GeneralOzonWorkflow
@@ -20,6 +24,7 @@ with workflow.unsafe.imports_passed_through():
         OzonPricesWorkflow,
         OzonAnalysisWorkflow,
         OzonNumberOfProductsWorkflow,
+        CreateMassDataImportWorkflow,
     )
     from activities import (
         activity_compute_products_all_expenses,
@@ -45,6 +50,7 @@ with workflow.unsafe.imports_passed_through():
         activity_write_transactions_to_odoo,
         activity_ozon_analysis_data_activity,
         activity_get_ozon_number_of_products,
+        activity_create_mass_data_import
     )
 
 
@@ -72,6 +78,7 @@ async def main():
             OzonPricesWorkflow,
             OzonAnalysisWorkflow,
             OzonNumberOfProductsWorkflow,
+            CreateMassDataImportWorkflow,
         ],
         activities = [
             activity_compute_products_all_expenses,
@@ -96,7 +103,8 @@ async def main():
             activity_write_stocks_to_odoo,
             activity_write_transactions_to_odoo,
             activity_ozon_analysis_data_activity,
-            activity_get_ozon_number_of_products
+            activity_get_ozon_number_of_products,
+            activity_create_mass_data_import
         ],
     ):
 
@@ -104,6 +112,8 @@ async def main():
             GeneralOzonWorkflow.run,
             id=workflow_id,
             task_queue=task_queue,
+            execution_timeout=EXECUTION_TIMEOUT,
+            retry_policy=RetryPolicy(maximum_interval=timedelta(minutes=2)),
         )
 
 

@@ -3,17 +3,13 @@ import requests
 import json
 
 from datetime import datetime, timedelta
+from auth_odoo import AuthOdoo
+from tools import update_activity_log_data
 
 
-class PriceHistoryCompetitors:
-    def __init__(self, username, password):
-        self.username = username
-        self.password = password
-        # self.token_mpstats = token_mp
-
-        self.url = "http://0.0.0.0:8070/"
-        self.db = "db_odoo"
-
+class PriceHistoryCompetitors(AuthOdoo):
+    def __init__(self):
+        super().__init__()
         self.chunk_size = 1000
 
     def _get_token_mpstats(self):
@@ -35,28 +31,6 @@ class PriceHistoryCompetitors:
         today_date_str = today_date.strftime("%Y-%m-%d")
         yesterday_date_str = yesterday_date.strftime("%Y-%m-%d")
         return today_date_str, yesterday_date_str
-
-    def connect_to_odoo_api_with_auth(self) -> dict:
-        session_url = f"{self.url}/web/session/authenticate"
-        data = {
-            "jsonrpc": "2.0",
-            "method": "call",
-            "params": {
-                "db": self.db,
-                "login": self.username,
-                "password": self.password,
-            },
-        }
-        session_response = requests.post(session_url, json=data)
-        session_data = session_response.json()
-
-        if session_data.get("result") and session_response.cookies.get("session_id"):
-            session_id = session_response.cookies["session_id"]
-            headers = {"Cookie": f"session_id={session_id}"}
-            return headers
-        else:
-            print(f'Error: Failed to authenticate - {session_data.get("error")}')
-            return None
 
     def get_request_count_competitors(self, path: str) -> requests.Response:
         endpoint = f"{self.url}{path}"
@@ -102,7 +76,7 @@ class PriceHistoryCompetitors:
         print(data)
         response = requests.post(endpoint, headers=headers, data=data)
 
-        return response.text
+        return response
 
     def get_request_mpstats(self, sku: int) -> requests.Response:
         url = f"https://mpstats.io/api/oz/get/item/{sku}/sales"
@@ -160,7 +134,7 @@ class PriceHistoryCompetitors:
         )
         # data = json.loads(res)
         # count_sku = data['total_records']
-        count_sku = 2
+        # count_sku = 2
         print(count_sku)
 
         num_chunks = count_sku // self.chunk_size
@@ -195,29 +169,34 @@ class PriceHistoryCompetitors:
         return "Success!"
 
     def activity_two(self, dict_ads: dict):
+        log_data = {}
+        sku_qty = 0
         for sku, ads in dict_ads.items():
-            self.get_request_create_history_price(
+            response = self.get_request_create_history_price(
                 path="/api/v1/price_history_competitors/create_ads/",
                 history_prices=ads,
                 sku=sku,
             )
+            update_activity_log_data(log_data, response.json())
+            sku_qty += 1
+        log_data['Количество товаров конкурентов по которым получены данные'] = sku_qty
+
+        return log_data
 
 
 def main():
-    from secrets import username, password
-
-    model = PriceHistoryCompetitors(username, password)
+    model = PriceHistoryCompetitors()
     model.main()
 
 
 def activity_two():
-    from secrets import username, password
-
     with open("data.txt", "r") as file:
         data_content = file.read()
 
     data_dict = ast.literal_eval(data_content)
     print(data_dict)
 
-    model = PriceHistoryCompetitors(username, password)
-    model.activity_two(data_dict)
+    model = PriceHistoryCompetitors()
+    log_data = model.activity_two(data_dict)
+
+    return log_data

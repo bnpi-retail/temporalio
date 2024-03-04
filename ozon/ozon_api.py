@@ -976,13 +976,13 @@ def import_postings_from_ozon_api_to_file(
         "posting_number",
         "order_id",
         "status",
-        "skus",
         "region",
         "city",
         "warehouse_id",
         "warehouse_name",
         "cluster_from",
         "cluster_to",
+        "products",
     ]
     if not os.path.isfile(file_path):
         write_headers_to_csv(file_path, fieldnames)
@@ -1014,7 +1014,13 @@ def import_postings_from_ozon_api_to_file(
             # TODO: какие статусы брать?
             if status not in ["delivered", "cancelled"]:
                 continue
-            skus = [i["sku"] for i in posting["products"]]
+            products = [{
+                "offer_id": product["offer_id"],
+                "price": product["price"],
+                "quantity": product["quantity"],
+                "sku": product["sku"],
+            } for product in posting["products"]]
+
             if analytics_data := posting.get("analytics_data"):
                 region = analytics_data["region"]
                 city = analytics_data["city"]
@@ -1034,13 +1040,13 @@ def import_postings_from_ozon_api_to_file(
                 "posting_number": posting_number,
                 "order_id": order_id,
                 "status": status,
-                "skus": skus,
                 "region": region,
                 "city": city,
                 "warehouse_id": warehouse_id,
                 "warehouse_name": warehouse_name,
                 "cluster_from": cluster_from,
                 "cluster_to": cluster_to,
+                "products": products,
             }
             postings_rows.append(row)
 
@@ -1048,6 +1054,8 @@ def import_postings_from_ozon_api_to_file(
             for row in postings_rows:
                 writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
                 writer.writerow(row)
+
+        print(offset_fbo, offset_fbs)
 
     return "Successfully imported all postings!"
 

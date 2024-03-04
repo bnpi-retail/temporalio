@@ -15,6 +15,7 @@ with workflow.unsafe.imports_passed_through():
         OzonPricesWorkflow,
         OzonAnalysisWorkflow,
         OzonNumberOfProductsWorkflow,
+        CreateMassDataImportWorkflow,
     )
 
 
@@ -23,6 +24,11 @@ class GeneralOzonWorkflow:
     @workflow.run
     async def run(self) -> None:
         await workflow.execute_child_workflow(
+            CreateMassDataImportWorkflow.run,
+            id="ozon-create-mass-data-import-child-workflow-id",
+        )
+
+        await workflow.execute_child_workflow(
             OzonProductsWorkflow.run,
             id="ozon-import-products-child-workflow-id",
         )
@@ -30,6 +36,11 @@ class GeneralOzonWorkflow:
         await workflow.execute_child_workflow(
             OzonFboSupplyOrdersWorkflow.run,
             id="ozon-fbo-supply-orders-workflow-id",
+        )
+
+        await workflow.execute_child_workflow(
+            OzonPostingsWorkflow.run,
+            id="ozon-postings-workflow-id",
         )
 
         await workflow.execute_child_workflow(
@@ -43,34 +54,8 @@ class GeneralOzonWorkflow:
         )
 
         await workflow.execute_child_workflow(
-            OzonPostingsWorkflow.run,
-            id="ozon-postings-workflow-id",
-        )
-
-        await workflow.execute_child_workflow(
             OzonActionsWorkflow.run,
             id="ozon-actions-workflow-id",
-        )
-
-        await workflow.execute_child_workflow(
-            OzonComputePercentExpensesWorkflow.run,
-            id="ozon-compute-percent-expenses-workflow-id",
-        )
-
-        await workflow.execute_child_workflow(
-            OzonComputeCoefsAndGroupsWorkflow.run,
-            id="ozon-compute-coef-and-groups-expenses-workflow-id",
-        )
-
-        await workflow.execute_child_workflow(
-            OzonComputeAllExpensesWorkflow.run,
-            id="ozon-compute-all-expenses-workflow-id",
-        )
-
-        # This place?
-        await workflow.execute_child_workflow(
-            OzonTasksWorkflow.run,
-            id="ozon-tasks-workflow-id",
         )
 
         # This place?
@@ -87,6 +72,27 @@ class GeneralOzonWorkflow:
         await workflow.execute_child_workflow(
             OzonNumberOfProductsWorkflow.run,
             id="ozon-number-of-prducst-workflow-id",
+        )
+
+        # This place?
+        await workflow.execute_child_workflow(
+            OzonTasksWorkflow.run,
+            id="ozon-tasks-workflow-id",
+        )
+
+        await workflow.execute_child_workflow(
+            OzonComputePercentExpensesWorkflow.run,
+            id="ozon-compute-percent-expenses-workflow-id",
+        )
+
+        await workflow.execute_child_workflow(
+            OzonComputeCoefsAndGroupsWorkflow.run,
+            id="ozon-compute-coef-and-groups-expenses-workflow-id",
+        )
+
+        await workflow.execute_child_workflow(
+            OzonComputeAllExpensesWorkflow.run,
+            id="ozon-compute-all-expenses-workflow-id",
         )
 
         return
