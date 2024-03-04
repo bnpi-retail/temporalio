@@ -1019,7 +1019,7 @@ def import_postings_from_ozon_api_to_file(
             order_id = posting["order_id"]
             status = posting["status"]
             # TODO: какие статусы брать?
-            if status not in ["delivered", "cancelled"]:
+            if status not in ["delivered", "cancelled", "cancelled_from_split_pending"]:
                 continue
             products = [{
                 "offer_id": product["offer_id"],
