@@ -982,6 +982,7 @@ def import_postings_from_ozon_api_to_file(
         "trading_scheme",
         "posting_number",
         "order_id",
+        "order_number",
         "status",
         "region",
         "city",
@@ -1017,6 +1018,7 @@ def import_postings_from_ozon_api_to_file(
             trading_scheme = "FBS" if posting.get("delivery_method") else "FBO"
             posting_number = posting["posting_number"]
             order_id = posting["order_id"]
+            order_number = posting["order_number"]
             status = posting["status"]
             # TODO: какие статусы брать?
             if status not in ["delivered", "cancelled", "cancelled_from_split_pending"]:
@@ -1046,6 +1048,7 @@ def import_postings_from_ozon_api_to_file(
                 "trading_scheme": trading_scheme,
                 "posting_number": posting_number,
                 "order_id": order_id,
+                "order_number": order_number,
                 "status": status,
                 "region": region,
                 "city": city,
