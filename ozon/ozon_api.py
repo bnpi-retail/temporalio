@@ -378,7 +378,7 @@ def get_product_commissions(product_ids: list, limit=1):
     return product_comissions
 
 
-def import_comissions_by_categories_from_ozon_api_to_file(file_path: str):
+def import_commissions_by_categories_from_ozon_api_to_file(file_path: str):
     fieldnames = [
         "commission_name",
         "category_name",
@@ -392,28 +392,22 @@ def import_comissions_by_categories_from_ozon_api_to_file(file_path: str):
     last_id = ""
     products = ["" for _ in range(limit)]
     structure = {}
-
+    cat_tree = get_categories_tree()
     while len(products) == limit:
         products, last_id = get_product(limit=limit, last_id=last_id)
         prod_ids = get_product_id(products)
-        products_attrs = get_product_attributes(prod_ids, limit=limit)
+        prod_info_list = get_product_info_list_by_product_id(prod_ids)
         commissions_rows = []
-        for prod in products_attrs:
-            description_category_id = prod["description_category_id"]
-            if structure.get(description_category_id):
+        for prod in prod_info_list:
+            type_id = prod["type_id"]
+            if structure.get(type_id):
                 continue
             else:
-                structure[description_category_id] = True
-
-            product_id = prod["id"]
-            attrs = prod["attributes"]
-            for a in attrs:
-                if a["attribute_id"] == 9461:
-                    category_name = a["values"][0]["value"]
-
-            prod_info = get_product_info(product_id)
-
-            for com in prod_info["commissions"]:
+                structure[type_id] = True
+            description_category_id = prod["description_category_id"]
+            parent, category_name = find_cat(cat_tree, description_category_id, type_id)
+            coms = get_product_info(prod["id"])["commissions"]
+            for com in coms:
                 if com["sale_schema"] == "fbo":
                     com_name = "Процент комиссии за продажу (FBO)"
                     trad_scheme = "FBO"
@@ -426,7 +420,7 @@ def import_comissions_by_categories_from_ozon_api_to_file(file_path: str):
                 percent = com["percent"]
 
                 row = {
-                    "category_name": category_name,
+                    "category_name": category_name if category_name else parent,
                     "description_category_id": description_category_id,
                     "commission_name": com_name,
                     "trading_scheme": trad_scheme,
@@ -440,7 +434,6 @@ def import_comissions_by_categories_from_ozon_api_to_file(file_path: str):
                 writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
                 writer.writerow(row)
 
-    return
 
 
 def get_transactions(
