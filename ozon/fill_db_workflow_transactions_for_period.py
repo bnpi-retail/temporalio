@@ -9,7 +9,7 @@ from temporalio.worker import Worker
 
 with workflow.unsafe.imports_passed_through():
     from activities import (
-        activity_import_transactions_from_prev_2_years,
+        activity_import_transactions_from_period,
         activity_write_transactions_to_odoo,
         activity_remove_csv_files,
     )
@@ -31,7 +31,7 @@ class OzonPostingsForPeriodWorkflow:
         )
 
         await workflow.execute_activity(
-            activity_import_transactions_from_prev_2_years,
+            activity_import_transactions_from_period,
             start_to_close_timeout=timedelta(seconds=20000),
             retry_policy=RetryPolicy(maximum_interval=timedelta(hours=24)),
         )
@@ -58,7 +58,7 @@ async def main():
         workflows=[OzonPostingsForPeriodWorkflow],
         activities=[
             activity_create_mass_data_import,
-            activity_import_transactions_from_prev_2_years,
+            activity_import_transactions_from_period,
             activity_write_transactions_to_odoo,
             activity_remove_csv_files,
         ],
