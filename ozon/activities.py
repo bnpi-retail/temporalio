@@ -123,8 +123,8 @@ async def activity_import_transactions_from_prev_2_years() -> None:
 
 @activity.defn
 async def activity_import_transactions_from_period() -> None:
-    date_from = "2024-02-01T00:00:00.000Z"
-    date_to = "2024-02-16T00:00:00.000Z"
+    date_from = "2024-01-30T00:00:00.000Z"
+    date_to = "2024-03-01T00:00:00.000Z"
     next_page = 1
     while next_page != "Successfully imported all transactions!":
         next_page = import_transactions_from_ozon_api_to_file(
@@ -269,10 +269,10 @@ async def activity_import_postings() -> None:
 @activity.defn
 async def activity_import_postings_40_days() -> None:
     date_from = convert_datetime_str_to_ozon_date(
-        str(datetime.combine(datetime.now(), time.min) - timedelta(days=200))
+        str(datetime.combine(datetime.now(), time.min) - timedelta(days=250))
     )
     date_to = convert_datetime_str_to_ozon_date(
-        str(datetime.combine(datetime.now(), time.max) - timedelta(days=1))
+        str(datetime.combine(datetime.now(), time.max) - timedelta(days=210))
     )
 
     import_postings_from_ozon_api_to_file(
