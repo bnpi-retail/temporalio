@@ -80,10 +80,10 @@ class GeneralOzonWorkflow:
             id="ozon-tasks-workflow-id",
         )
 
-        await workflow.execute_child_workflow(
-            OzonComputePercentExpensesWorkflow.run,
-            id="ozon-compute-percent-expenses-workflow-id",
-        )
+        # await workflow.execute_child_workflow(
+        #     OzonComputePercentExpensesWorkflow.run,
+        #     id="ozon-compute-percent-expenses-workflow-id",
+        # )
 
         await workflow.execute_child_workflow(
             OzonComputeCoefsAndGroupsWorkflow.run,
