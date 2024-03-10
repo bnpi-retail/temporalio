@@ -1,3 +1,4 @@
+import os
 import asyncio
 from datetime import timedelta
 
@@ -6,14 +7,17 @@ from temporalio.client import Client
 from temporalio.common import RetryPolicy
 from temporalio.worker import Worker
 
-
 with workflow.unsafe.imports_passed_through():
     from activities import (
         activity_import_postings_40_days,
         activity_write_postings_to_odoo,
         activity_remove_csv_files,
     )
-    from tools import ImportLogging, odoo_log
+    from tools import ImportLogging
+    from sentry_interceptor import SentryInterceptor
+    from dotenv import load_dotenv
+    import sentry_sdk
+
 
 @activity.defn
 async def activity_create_mass_data_import() -> None:
@@ -50,18 +54,25 @@ class OzonPostingsForPeriodWorkflow:
 
 
 async def main():
+    # Initialize the Sentry SDK
+    load_dotenv()
+    sentry_sdk.init(
+        dsn=os.getenv("SENTRY_DSN"),
+    )
+
     client = await Client.connect("localhost:7233")
 
     async with Worker(
-        client,
-        task_queue="ozon-task-queue",
-        workflows=[OzonPostingsForPeriodWorkflow],
-        activities=[
-            activity_create_mass_data_import,
-            activity_import_postings_40_days,
-            activity_write_postings_to_odoo,
-            activity_remove_csv_files,
-        ],
+            client,
+            task_queue="ozon-task-queue",
+            workflows=[OzonPostingsForPeriodWorkflow],
+            activities=[
+                activity_create_mass_data_import,
+                activity_import_postings_40_days,
+                activity_write_postings_to_odoo,
+                activity_remove_csv_files,
+            ],
+            interceptors=[SentryInterceptor()],  # Use SentryInterceptor for error reporting
     ):
         handle = await client.start_workflow(
             OzonPostingsForPeriodWorkflow.run,

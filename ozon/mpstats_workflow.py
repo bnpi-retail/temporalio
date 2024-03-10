@@ -1,3 +1,4 @@
+import os
 import asyncio
 
 from datetime import timedelta
@@ -14,10 +15,15 @@ with workflow.unsafe.imports_passed_through():
         activity_two as price_histry_competitors_activity_two,
     )
     from tools import ImportLogging, odoo_log
+    from sentry_interceptor import SentryInterceptor
+    from dotenv import load_dotenv
+    import sentry_sdk
+
 
 @activity.defn
 async def activity_create_mass_data_import() -> None:
     await ImportLogging().create_mass_data_import({'name': 'MPstats импорт', 'logged_activities_qty': 1})
+
 
 @activity.defn
 async def mp_parsing_api_activity() -> NoReturn:
@@ -54,13 +60,20 @@ class MPStatsWorkflow:
 
 
 async def main():
+    # Initialize the Sentry SDK
+    load_dotenv()
+    sentry_sdk.init(
+        dsn=os.getenv("SENTRY_DSN"),
+    )
+
     client = await Client.connect("localhost:7233")
 
     async with Worker(
-        client,
-        task_queue="MP-stats-task-queue",
-        workflows=[MPStatsWorkflow],
-        activities=[mp_parsing_api_activity, save_in_odoo_activity, activity_create_mass_data_import],
+            client,
+            task_queue="MP-stats-task-queue",
+            workflows=[MPStatsWorkflow],
+            activities=[mp_parsing_api_activity, save_in_odoo_activity, activity_create_mass_data_import],
+            interceptors=[SentryInterceptor()],  # Use SentryInterceptor for error reporting
     ):
         await client.execute_workflow(
             MPStatsWorkflow.run,
