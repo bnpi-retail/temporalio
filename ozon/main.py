@@ -7,7 +7,7 @@ from temporalio.worker import Worker
 from temporalio.common import RetryPolicy
 from datetime import timedelta
 
-EXECUTION_TIMEOUT = timedelta(hours=6)
+EXECUTION_TIMEOUT = timedelta(hours=8)
 
 with workflow.unsafe.imports_passed_through():
     from ozon_workflow import GeneralOzonWorkflow
