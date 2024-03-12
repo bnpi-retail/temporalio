@@ -49,7 +49,7 @@ async def activity_import_products() -> None:
     import_products_from_ozon_api_to_file(PRODUCTS_PATH)
 
 @activity.defn
-@odoo_log({'name': 'Импорт Продуктов'})
+@odoo_log({'name': 'Импорт Продуктов', 'workflow_name': 'Главный поток'})
 async def activity_write_products_to_odoo() -> dict:
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
     divide_csv_into_chunks(PRODUCTS_PATH)
@@ -132,7 +132,7 @@ async def activity_import_transactions_from_period() -> None:
         )
 
 @activity.defn
-@odoo_log({'name': 'Импорт Транзакций'})
+@odoo_log({'name': 'Импорт Транзакций', 'workflow_name': 'Главный поток'})
 async def activity_write_transactions_to_odoo() -> dict:
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
     divide_csv_into_chunks(TRANSACTIONS_PATH)
@@ -156,7 +156,7 @@ async def activity_import_stocks() -> None:
     import_stocks_from_ozon_api_to_file(STOCKS_PATH)
 
 @activity.defn
-@odoo_log({'name': 'Импорт Остатков'})
+@odoo_log({'name': 'Импорт Остатков', 'workflow_name': 'Главный поток'})
 async def activity_write_stocks_to_odoo() -> dict:
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
     divide_csv_into_chunks(STOCKS_PATH)
@@ -217,7 +217,7 @@ async def activity_compute_products_all_expenses() -> dict:
     return {'Результат': 'Расчет всех издержек произведен'}
 
 @activity.defn
-@odoo_log({'name': 'Создание ежедневных задач'})
+@odoo_log({'name': 'Создание ежедневных задач', 'workflow_name': 'Главный поток'})
 async def activity_create_daily_tasks() -> dict:
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
     url = "http://0.0.0.0:8070/tasks/create_daily_tasks"
@@ -234,7 +234,7 @@ async def activity_import_prices() -> None:
     import_prices_from_ozon_api_to_file(PRICES_PATH)
 
 @activity.defn
-@odoo_log({'name': 'Импорт Цен'})
+@odoo_log({'name': 'Импорт Цен', 'workflow_name': 'Главный поток'})
 async def activity_write_prices_to_odoo() -> dict:
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
     divide_csv_into_chunks(PRICES_PATH)
@@ -280,7 +280,7 @@ async def activity_import_postings_40_days() -> None:
     )
 
 @activity.defn
-@odoo_log({'name': 'Импорт Отправлений'})
+@odoo_log({'name': 'Импорт Отправлений', 'workflow_name': 'Главный поток'})
 async def activity_write_postings_to_odoo() -> dict:
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
     divide_csv_into_chunks(POSTINGS_PATH)
@@ -304,7 +304,7 @@ async def activity_import_fbo_supply_orders() -> None:
     import_fbo_supply_orders_from_ozon_api_to_file(FBO_SUPPLY_ORDERS_PATH)
 
 @activity.defn
-@odoo_log({'name': 'Импорт Заказов на поставку'})
+@odoo_log({'name': 'Импорт Заказов на поставку', 'workflow_name': 'Главный поток'})
 async def activity_write_fbo_supply_orders_to_odoo() -> dict:
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
     divide_csv_into_chunks(FBO_SUPPLY_ORDERS_PATH)
@@ -328,7 +328,7 @@ async def activity_import_ozon_actions() -> None:
     import_actions_from_ozon_api_to_file(ACTIONS_PATH)
 
 @activity.defn
-@odoo_log({'name': 'Импорт Акций'})
+@odoo_log({'name': 'Импорт Акций', 'workflow_name': 'Главный поток'})
 async def activity_write_ozon_actions_to_odoo() -> dict:
     session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
     url = "http://0.0.0.0:8070/import/ozon_actions"
@@ -343,12 +343,12 @@ async def activity_write_ozon_actions_to_odoo() -> dict:
     return log_data
 
 @activity.defn
-@odoo_log({'name': 'Импорт данных по интересу к продуктам'})
+@odoo_log({'name': 'Импорт данных по интересу к продуктам', 'workflow_name': 'Главный поток'})
 async def activity_ozon_analysis_data_activity() -> dict:
     return OzonAnalysisData().main()
 
 @activity.defn
-@odoo_log({'name': 'Импорт количества продуктов'})
+@odoo_log({'name': 'Импорт количества продуктов', 'workflow_name': 'Главный поток'})
 async def activity_get_ozon_number_of_products() -> dict:
     return OzonNumberOfProducts().main()
 
