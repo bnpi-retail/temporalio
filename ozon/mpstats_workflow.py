@@ -31,7 +31,7 @@ async def mp_parsing_api_activity() -> NoReturn:
 
 
 @activity.defn
-@odoo_log({'name': 'Импорт истории цен конкурентов'})
+@odoo_log({'name': 'Импорт истории цен конкурентов', 'workflow_name': 'MPstats импорт'})
 async def save_in_odoo_activity() -> dict:
     return price_histry_competitors_activity_two()
 
