@@ -352,6 +352,16 @@ async def activity_ozon_analysis_data_activity() -> dict:
 async def activity_get_ozon_number_of_products() -> dict:
     return OzonNumberOfProducts().main()
 
+@activity.defn
+async def activity_draw_graphs():
+    session_id = authenticate_to_odoo(username=USERNAME, password=PASSWORD)
+    headers = {"Cookie": f"session_id={session_id}"}
+    url = "http://0.0.0.0:8070/api/v1/draw_graphs_categories_products"
+    response = requests.post(url, headers=headers)
+    if response.status_code != 200:
+        print("activity_draw_graphs error. Traceback in odoo log")
+        raise requests.exceptions.RequestException()
+
 # if you want to change name, change also inside controllers' search
 @activity.defn
 async def activity_create_mass_data_import() -> None:
