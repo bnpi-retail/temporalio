@@ -10,6 +10,7 @@ from temporalio.worker import Worker
 with workflow.unsafe.imports_passed_through():
     from activities import (
         activity_draw_graphs,
+        activity_draw_graphs_competitors,
     )
     from sentry_interceptor import SentryInterceptor
     from dotenv import load_dotenv
@@ -29,7 +30,13 @@ class OzonDrawGraphsWorkflow:
     async def run(self) -> None:
         await workflow.execute_activity(
             activity_draw_graphs,
-            start_to_close_timeout=timedelta(hours=6),
+            start_to_close_timeout=timedelta(hours=8),
+            retry_policy=RetryPolicy(maximum_interval=timedelta(minutes=1)),
+        )
+
+        await workflow.execute_activity(
+            activity_draw_graphs_competitors,
+            start_to_close_timeout=timedelta(hours=8),
             retry_policy=RetryPolicy(maximum_interval=timedelta(minutes=1)),
         )
 
@@ -49,14 +56,10 @@ async def main():
             workflows=[OzonDrawGraphsWorkflow],
             activities=[
                 activity_draw_graphs,
+                activity_draw_graphs_competitors
             ],
             interceptors=[SentryInterceptor()],  # Use SentryInterceptor for error reporting
     ):
-        # handle = await client.start_workflow(
-        #     OzonDrawGraphsWorkflow.run,
-        #     id="ozon-workflow-draw_graph",
-        #     task_queue="ozon-task-queue-graphs",
-        # )
         await client.execute_workflow(
             OzonDrawGraphsWorkflow.run,
             id="ozon-workflow-draw_graph",
@@ -64,8 +67,6 @@ async def main():
             execution_timeout=EXECUTION_TIMEOUT,
             retry_policy=RetryPolicy(maximum_interval=timedelta(minutes=2)),
         )
-
-        # await handle.result()
 
 
 if __name__ == "__main__":
